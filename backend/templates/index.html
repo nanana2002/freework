@@ -349,10 +349,6 @@
                         <p id="today-worked" class="text-2xl font-bold">0小时0分钟</p>
                     </div>
                     <div class="border border-gray-200 rounded-lg p-4">
-                        <h4 class="text-gray-500 mb-2">已阅读文档</h4>
-                        <p id="today-read" class="text-2xl font-bold">0篇</p>
-                    </div>
-                    <div class="border border-gray-200 rounded-lg p-4">
                         <h4 class="text-gray-500 mb-2">已创建备忘录</h4>
                         <p id="today-notes" class="text-2xl font-bold">0篇</p>
                     </div>
@@ -761,41 +757,52 @@
 
         <div id="chat" class="page">
             <div class="bg-white rounded-xl p-6 card-shadow">
-                <h2 class="text-2xl font-bold mb-6">AI对话</h2>
-                
-                <div class="mb-6">
-                    <h3 class="font-bold text-lg mb-3">Qwen API 设置</h3>
-                    <div class="flex flex-col md:flex-row gap-3 items-start md:items-center">
-                        <input type="password" id="qwen-api-key" placeholder="请输入您的Qwen API密钥" 
-                               class="flex-1 border rounded p-2">
-                        <button id="save-api-key" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition">
-                            保存密钥
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="border rounded-lg overflow-hidden flex flex-col h-[600px]">
-                    <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
-                        <div class="flex items-start gap-3">
-                            <div class="bg-gray-200 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
-                                <i class="fa fa-robot text-gray-600"></i>
-                            </div>
-                            <div class="bg-gray-100 rounded-lg rounded-tl-none p-3 max-w-[80%]">
-                                您好！我是您的AI助手，有什么可以帮助您的吗？
-                            </div>
+                <div class="flex flex-col md:flex-row gap-6">
+                    <!-- 对话列表侧边栏 -->
+                    <div class="md:w-1/4 border rounded-lg overflow-hidden">
+                        <div class="p-4 border-b flex justify-between items-center">
+                            <h3 class="font-bold">对话列表</h3>
+                            <button id="new-conversation" class="bg-primary hover:bg-primary/90 text-white p-2 rounded">
+                                <i class="fa fa-plus"></i>
+                            </button>
+                        </div>
+                        <div id="conversations-list" class="max-h-[500px] overflow-y-auto">
+                            <!-- 对话列表将通过JS动态生成 -->
                         </div>
                     </div>
                     
-                    <div class="border-t p-4">
-                        <form id="chat-form" class="flex gap-3">
-                            <textarea id="chat-input" placeholder="请输入您的问题..." 
-                                      class="flex-1 border rounded p-2 resize-none" rows="3"></textarea>
-                            <button type="submit" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition flex-shrink-0">
-                                <i class="fa fa-paper-plane"></i>
-                            </button>
-                        </form>
-                        <div id="chat-status" class="text-sm text-gray-500 mt-2 hidden">
-                            <i class="fa fa-circle-o-notch fa-spin"></i> 思考中...
+                    <!-- 对话内容区域 -->
+                    <div class="md:w-3/4 flex flex-col">
+                        <h2 class="text-2xl font-bold mb-6">AI对话</h2>
+                        
+                        <div class="mb-6">
+                            <h3 class="font-bold text-lg mb-3">Qwen API 设置</h3>
+                            <div class="flex flex-col md:flex-row gap-3 items-start md:items-center">
+                                <input type="password" id="qwen-api-key" placeholder="请输入您的Qwen API密钥" 
+                                    class="flex-1 border rounded p-2">
+                                <button id="save-api-key" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition">
+                                    保存密钥
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="border rounded-lg overflow-hidden flex flex-col h-[600px]">
+                            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
+                                <!-- 消息内容将动态生成 -->
+                            </div>
+                            
+                            <div class="border-t p-4">
+                                <form id="chat-form" class="flex gap-3">
+                                    <textarea id="chat-input" placeholder="请输入您的问题..." 
+                                            class="flex-1 border rounded p-2 resize-none" rows="3"></textarea>
+                                    <button type="submit" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition flex-shrink-0">
+                                        <i class="fa fa-paper-plane"></i>
+                                    </button>
+                                </form>
+                                <div id="chat-status" class="text-sm text-gray-500 mt-2 hidden">
+                                    <i class="fa fa-circle-o-notch fa-spin"></i> 思考中...
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2569,7 +2576,12 @@
             });
         }
 
+        // 全局变量 - 当前活跃对话ID
+        let currentConversationId = null;
+
+        // 初始化对话功能（扩展原initChat函数）
         function initChat() {
+            // 原有的API密钥保存逻辑
             document.getElementById('save-api-key').addEventListener('click', function() {
                 const apiKey = document.getElementById('qwen-api-key').value;
                 if (apiKey) {
@@ -2585,6 +2597,13 @@
                 document.getElementById('qwen-api-key').value = savedApiKey;
             }
             
+            // 新对话按钮事件
+            document.getElementById('new-conversation').addEventListener('click', createNewConversation);
+            
+            // 加载对话列表
+            loadConversations();
+            
+            // 修改表单提交事件处理（约2595-2628行）
             document.getElementById('chat-form').addEventListener('submit', function(e) {
                 e.preventDefault();
                 const input = document.getElementById('chat-input');
@@ -2598,36 +2617,196 @@
                     return;
                 }
                 
-                addChatMessage(message, 'user');
-                input.value = '';
+                // 处理标题 - 取前10个字
+                const title = message.length > 10 
+                    ? message.substring(0, 10) + '...' 
+                    : message;
                 
-                statusElement.classList.remove('hidden');
-                const messagesContainer = document.getElementById('chat-messages');
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                
-                callQwenApi(message, apiKey)
-                .then(response => {
-                    statusElement.classList.add('hidden');
-                    addChatMessage(response, 'ai');
-                })
-                .catch(error => {
-                    statusElement.classList.add('hidden');
-                    addChatMessage(`对话失败: ${error.message}`, 'ai');
-                });
+                // 如果没有活跃对话，创建新对话并使用消息内容作为标题
+                if (!currentConversationId) {
+                    createNewConversation(title).then(convId => {  // 传入标题
+                        sendMessageToConversation(convId, message, apiKey, input, statusElement);
+                    });
+                } else {
+                    sendMessageToConversation(currentConversationId, message, apiKey, input, statusElement);
+                }
             });
         }
 
+        // 加载所有对话列表
+        function loadConversations() {
+            fetch('/api/conversations')
+                .then(response => response.json())
+                .then(data => {
+                    const listContainer = document.getElementById('conversations-list');
+                    listContainer.innerHTML = '';
+                    
+                    if (data.conversations.length === 0) {
+                        listContainer.innerHTML = '<div class="p-4 text-gray-500 text-center">暂无对话记录</div>';
+                        return;
+                    }
+                    
+                    data.conversations.forEach(conv => {
+                        const convElement = document.createElement('div');
+                        convElement.className = `p-3 border-b hover:bg-gray-50 cursor-pointer ${currentConversationId === conv.id ? 'bg-primary/10' : ''}`;
+                        convElement.innerHTML = `
+                            <div class="font-medium truncate">${conv.title}</div>
+                            <div class="text-xs text-gray-500">${conv.updated_at} (${conv.message_count}条消息)</div>
+                            <button class="delete-conv-btn text-red-400 hover:text-red-600 text-xs absolute right-2 top-2 hidden" data-id="${conv.id}">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        `;
+                        convElement.setAttribute('data-id', conv.id);
+                        
+                        // 点击切换对话
+                        convElement.addEventListener('click', (e) => {
+                            if (!e.target.closest('.delete-conv-btn')) {
+                                switchToConversation(conv.id);
+                            }
+                        });
+                        
+                        // 删除对话按钮
+                        convElement.querySelector('.delete-conv-btn').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            if (confirm('确定要删除这个对话吗？')) {
+                                deleteConversation(conv.id);
+                            }
+                        });
+                        
+                        listContainer.appendChild(convElement);
+                    });
+                });
+        }
+        
+        // 创建新对话（修改版）
+        function createNewConversation(title = '新对话') {
+            return fetch('/api/conversations', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({title: title})  // 使用传入的标题
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadConversations();
+                    switchToConversation(data.conversation.id);
+                    return data.conversation.id;
+                }
+                throw new Error('创建对话失败');
+            });
+        }
+
+        // 切换到指定对话
+        function switchToConversation(convId) {
+            currentConversationId = convId;
+            
+            // 更新UI选中状态
+            document.querySelectorAll('#conversations-list > div').forEach(el => {
+                el.classList.toggle('bg-primary/10', el.getAttribute('data-id') == convId);
+            });
+            
+            // 加载对话消息
+            fetch(`/api/conversations/${convId}/messages`)
+                .then(response => response.json())
+                .then(data => {
+                    const messagesContainer = document.getElementById('chat-messages');
+                    messagesContainer.innerHTML = '';
+                    
+                    // 渲染消息
+                    data.messages.forEach(msg => {
+                        addChatMessage(msg.content, msg.role);
+                    });
+                });
+        }
+
+        // 删除对话
+        function deleteConversation(convId) {
+            fetch(`/api/conversations/${convId}`, {method: 'DELETE'})
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (currentConversationId === convId) {
+                            currentConversationId = null;
+                            document.getElementById('chat-messages').innerHTML = '';
+                        }
+                        loadConversations();
+                    }
+                });
+        }
+
+        // 发送消息到当前对话
+        function sendMessageToConversation(convId, message, apiKey, input, statusElement) {
+            // 添加用户消息到UI
+            addChatMessage(message, 'user');
+            input.value = '';
+            
+            // 显示加载状态
+            statusElement.classList.remove('hidden');
+            scrollChatToBottom();
+
+            // 保存用户消息到后端（后续逻辑保持不变）
+            saveMessageToConversation(convId, 'user', message)
+                .then(() => {
+                    return callQwenApi(message, apiKey);
+                })
+                .then(aiResponse => {
+                    addChatMessage(aiResponse, 'ai');
+                    return saveMessageToConversation(convId, 'ai', aiResponse);
+                })
+                .catch(error => {
+                    addChatMessage(`对话失败: ${error.message}`, 'ai');
+                })
+                .finally(() => {
+                    statusElement.classList.add('hidden');
+                    scrollChatToBottom();
+                    loadConversations();
+                });
+        }
+
+        // 更新对话标题UI
+        function updateConversationTitle(convId, title) {
+            // 假设导航按钮的类名为 'chat-nav-btn'
+            const chatNavBtn = document.querySelector('.chat-nav-btn');
+            if (chatNavBtn) {
+                chatNavBtn.textContent = title; // 更新导航按钮显示的标题
+            }
+            // 若有对话列表，也可同步更新列表中的对应项
+        }
+
+        // 保存消息到对话
+        function saveMessageToConversation(convId, role, content) {
+            return fetch(`/api/conversations/${convId}/messages`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({role, content})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) throw new Error('保存消息失败');
+                return data;
+            });
+        }
+
+        // 辅助函数：滚动到最新消息
+        function scrollChatToBottom() {
+            const messagesContainer = document.getElementById('chat-messages');
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // 修改原callQwenApi函数（保持之前的实现，使用后端代理）
         function callQwenApi(message, apiKey) {
             return new Promise((resolve, reject) => {
-                setTimeout(() => {
-                    if (apiKey === 'VALID_KEY') {
-                        resolve(`这是AI对您问题"${message}"的回答。在实际应用中，这里将显示真实的API返回结果。`);
-                    } else if (apiKey === 'ERROR_KEY') {
-                        reject(new Error('API 密钥验证失败，请检查您的密钥。'));
-                    } else {
-                        resolve(`模拟回复：您问了 "${message}"。请注意，目前是前端模拟回复，需要后端接入Qwen API才能获得真实结果。`);
-                    }
-                }, 1500);
+                fetch('/api/call-qwen', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message, api_key: apiKey})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) resolve(data.response);
+                    else reject(new Error(data.error || 'API调用失败'));
+                })
+                .catch(error => reject(new Error(`网络错误：${error.message}`)));
             });
         }
         

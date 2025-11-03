@@ -9,7 +9,8 @@ from dotenv import load_dotenv
 from .models import db, PDFBook # 导入更新后的模型
 import time # 导入 time 模块用于时间戳
 import codecs
-from .models import db, PDFBook, Bookmark  # 导入新模型
+import json
+from .models import db, PDFBook, Conversation, Message, Bookmark   # 更新导入
 
 # 加载环境变量
 load_dotenv() 
@@ -216,9 +217,133 @@ def delete_bookmark(bookmark_id):
     db.session.commit()
     return jsonify({'success': True})
 
+
+
+# Qwen API 调用接口（后端代理，避免前端跨域）
+@app.route('/api/call-qwen', methods=['POST'])
+def call_qwen():
+    try:
+        data = request.json
+        if not data or not data.get('message') or not data.get('api_key'):
+            return jsonify({'success': False, 'error': '缺少参数：message或api_key'}), 400
+        
+        # 构建Qwen API请求参数
+        qwen_api_url = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {data['api_key']}"
+        }
+        
+        payload = {
+            "model": "qwen-turbo",  # 可根据需要更换为其他Qwen模型
+            "messages": [
+                {"role": "user", "content": data['message']}
+            ],
+            "temperature": 0.7
+        }
+        
+        # 调用Qwen API
+        response = requests.post(
+            qwen_api_url,
+            headers=headers,
+            data=json.dumps(payload)
+        )
+        
+        # 处理API响应
+        if response.status_code == 200:
+            result = response.json()
+            if result.get('choices') and len(result['choices']) > 0:
+                return jsonify({
+                    'success': True,
+                    'response': result['choices'][0]['message']['content']
+                })
+            else:
+                return jsonify({'success': False, 'error': 'API返回格式异常'})
+        else:
+            return jsonify({
+                'success': False,
+                'error': f'API调用失败：{response.status_code}，{response.text}'
+            })
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'服务器错误：{str(e)}'}), 500
+    
+   
+
+# 获取所有对话列表
+@app.route('/api/conversations', methods=['GET'])
+def get_conversations():
+    conversations = Conversation.query.order_by(Conversation.updated_at.desc()).all()
+    return jsonify({
+        'conversations': [c.to_dict() for c in conversations]
+    })
+
+# 创建新对话
+@app.route('/api/conversations', methods=['POST'])
+def create_conversation():
+    data = request.json
+    title = data.get('title', '新对话')
+    
+    new_conv = Conversation(title=title)
+    db.session.add(new_conv)
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'conversation': new_conv.to_dict()
+    })
+
+# 获取单个对话的消息记录
+@app.route('/api/conversations/<int:conv_id>/messages', methods=['GET'])
+def get_conversation_messages(conv_id):
+    conversation = Conversation.query.get_or_404(conv_id)
+    messages = Message.query.filter_by(conversation_id=conv_id).order_by(Message.created_at).all()
+    
+    return jsonify({
+        'conversation': conversation.to_dict(),
+        'messages': [m.to_dict() for m in messages]
+    })
+
+# 保存新消息到对话
+@app.route('/api/conversations/<int:conv_id>/messages', methods=['POST'])
+def add_message(conv_id):
+    data = request.json
+    if not data or not data.get('role') or not data.get('content'):
+        return jsonify({'success': False, 'error': '缺少角色或内容'}), 400
+    
+    # 验证对话存在
+    conv = Conversation.query.get_or_404(conv_id)
+    
+    # 创建消息
+    new_msg = Message(
+        conversation_id=conv_id,
+        role=data['role'],
+        content=data['content']
+    )
+    db.session.add(new_msg)
+    
+    # 如果是第一条消息，用消息内容生成对话标题
+    if len(conv.messages) == 0:
+        conv.title = data['content'][:30]  # 取前30字作为标题
+        conv.updated_at = datetime.utcnow()
+    
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': new_msg.to_dict(),
+        'conversation': conv.to_dict()
+    })
+
+# 删除对话
+@app.route('/api/conversations/<int:conv_id>', methods=['DELETE'])
+def delete_conversation(conv_id):
+    conv = Conversation.query.get_or_404(conv_id)
+    db.session.delete(conv)
+    db.session.commit()
+    return jsonify({'success': True})
+
 if __name__ == '__main__':
     with app.app_context():
-        # 在第一次运行时创建数据库表
-        db.create_all() 
-        pass
+        db.create_all()  # 取消注释，首次运行时创建所有表
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
+# 直接创建db实例，而不是从其他模块导入
 db = SQLAlchemy()
 
 class PDFBook(db.Model):
@@ -31,4 +32,40 @@ class Bookmark(db.Model):
             'title': self.title,
             'url': self.url,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M')
+        }
+
+class Conversation(db.Model):
+    """对话列表模型"""
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)  # 对话标题（可从首条消息生成）
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 关联的消息
+    messages = db.relationship('Message', backref='conversation', lazy=True, cascade="all, delete-orphan")
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M'),
+            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M'),
+            'message_count': len(self.messages)
+        }
+
+class Message(db.Model):
+    """单条消息模型"""
+    id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversation.id'), nullable=False)
+    role = db.Column(db.String(20), nullable=False)  # 'user' 或 'ai'
+    content = db.Column(db.Text, nullable=False)     # 消息内容
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'conversation_id': self.conversation_id,
+            'role': self.role,
+            'content': self.content,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S')
         }
