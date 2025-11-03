@@ -1,0 +1,2178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多功能工作空间</title>
+    <!-- 引入外部资源 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- 配置Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#8B5CF6',
+                        dark: '#1E293B',
+                        light: '#F8FAFC'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- 自定义工具类 -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .glass {
+                background: rgba(255, 255, 255, 0.9);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+            }
+            .card-shadow {
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            }
+            .timer-hidden {
+                transform: translateX(calc(100% - 40px));
+            }
+            .timer-visible {
+                transform: translateX(0);
+            }
+        }
+    </style>
+    
+    <style>
+        /* 全局样式 */
+        body {
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        
+        /* 倒计时悬浮窗样式 */
+        #timer-widget {
+            transition: all 0.3s ease;
+            z-index: 50;
+            max-width: 380px;
+            width: 100%;
+        }
+        
+        /* 页面切换动画 */
+        .page {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 书架样式 */
+        .book-shelf {
+            perspective: 1000px;
+        }
+        
+        .book {
+            transition: all 0.3s ease;
+            transform-style: preserve-3d;
+        }
+        
+        .book:hover {
+            transform: rotateY(-10deg) translateZ(20px);
+        }
+        
+        /* 1024游戏样式 */
+        #game-1024 .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        
+        #game-1024 .cell {
+            aspect-ratio: 1/1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+        
+        /* 五子棋样式 */
+        #gomoku .board {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            gap: 2px;
+        }
+        
+        #gomoku .board-cell {
+            aspect-ratio: 1/1;
+            background-color: #E6B89C;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        #gomoku .stone {
+            border-radius: 50%;
+            width: 80%;
+            height: 80%;
+            transition: all 0.2s ease;
+        }
+        
+        #gomoku .stone.black {
+            background-color: #000;
+        }
+        
+        #gomoku .stone.white {
+            background-color: #fff;
+            border: 1px solid #ccc;
+        }
+        
+        /* 备忘录样式 */
+        .note-card {
+            transition: all 0.3s ease;
+        }
+        
+        .note-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .note-editor-toolbar button {
+            transition: all 0.2s ease;
+        }
+        
+        .note-editor-toolbar button:hover {
+            background-color: #e2e8f0;
+        }
+        
+        .note-content {
+            min-height: 300px;
+            outline: none;
+        }
+        
+        /* PDF查看器加载状态 */
+        .pdf-loading {
+            animation: spin 1.5s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <!-- 倒计时悬浮窗 - 右下角隐藏式 -->
+    <div id="timer-widget" class="fixed bottom-4 right-4 timer-hidden glass rounded-xl p-4 card-shadow">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="font-bold text-lg">工作倒计时</h3>
+            <button id="minimize-timer" class="text-gray-600 hover:text-gray-900">
+                <i class="fa fa-window-minimize"></i>
+            </button>
+        </div>
+        <div id="timer-content">
+            <div class="flex flex-wrap justify-between items-center gap-3">
+                <div>
+                    <p class="text-sm text-gray-600">今日工作时长</p>
+                    <div class="flex items-center mt-1">
+                        <input type="number" id="work-hours" value="7" min="0.5" step="0.5" 
+                               class="w-16 border rounded p-1 text-center mr-2">
+                        <span>小时</span>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <p class="text-sm text-gray-600">剩余时间</p>
+                    <p id="countdown" class="text-2xl font-bold">07:00:00</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">预计下班时间</p>
+                    <p id="end-time" class="font-medium">19:49</p>
+                </div>
+            </div>
+            <div class="flex justify-center mt-3 gap-3">
+                <button id="start-timer" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition">
+                    <i class="fa fa-play mr-1"></i> 开始
+                </button>
+                <button id="pause-timer" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg transition hidden">
+                    <i class="fa fa-pause mr-1"></i> 暂停
+                </button>
+                <button id="reset-timer" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition">
+                    <i class="fa fa-refresh mr-1"></i> 重置
+                </button>
+            </div>
+        </div>
+        <!-- 悬浮触发区域 -->
+        <div id="timer-handle" class="absolute left-0 top-1/2 transform -translate-x-3 -translate-y-1/2 bg-primary text-white w-6 h-12 rounded-l-lg flex items-center justify-center cursor-pointer">
+            <i class="fa fa-chevron-left"></i>
+        </div>
+    </div>
+
+    <!-- 主容器 -->
+    <div class="container mx-auto px-4 py-8">
+        <!-- 顶部导航 -->
+        <nav class="mb-8 bg-white rounded-xl p-4 card-shadow">
+            <div class="flex flex-wrap justify-center gap-2 md:gap-4">
+                <button class="nav-btn active px-4 py-2 rounded-lg transition flex items-center" data-page="dashboard">
+                    <i class="fa fa-home mr-2"></i> 仪表盘
+                </button>
+                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center" data-page="timer">
+                    <i class="fa fa-clock-o mr-2"></i> 计时器
+                </button>
+                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center" data-page="books">
+                    <i class="fa fa-book mr-2"></i> 书架
+                </button>
+                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center" data-page="music">
+                    <i class="fa fa-music mr-2"></i> 音乐
+                </button>
+                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center" data-page="games">
+                    <i class="fa fa-gamepad mr-2"></i> 游戏
+                </button>
+                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center" data-page="notes">
+                    <i class="fa fa-sticky-note mr-2"></i> 备忘录
+                </button>
+                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center" data-page="chat">
+                    <i class="fa fa-comments mr-2"></i> 对话
+                </button>
+            </div>
+        </nav>
+
+        <!-- 仪表盘页面 -->
+        <div id="dashboard" class="page active">
+            <div class="bg-white rounded-xl p-6 mb-6 card-shadow">
+                <h2 class="text-2xl font-bold mb-4">欢迎来到工作空间</h2>
+                <p class="text-gray-600 mb-6">这里集成了您需要的各种工具，帮助您更高效地工作和放松。</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- 功能卡片 -->
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 hover:shadow-lg transition cursor-pointer card-shadow" onclick="navigateTo('timer')">
+                        <div class="bg-blue-100 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                            <i class="fa fa-clock-o text-primary text-xl"></i>
+                        </div>
+                        <h3 class="font-bold text-lg mb-2">工作计时器</h3>
+                        <p class="text-gray-600">设置今日工作时长，跟踪剩余时间</p>
+                    </div>
+                    
+                    <div class="bg-gradient-to-br from-green-50 to-teal-50 rounded-xl p-5 hover:shadow-lg transition cursor-pointer card-shadow" onclick="navigateTo('books')">
+                        <div class="bg-green-100 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                            <i class="fa fa-book text-secondary text-xl"></i>
+                        </div>
+                        <h3 class="font-bold text-lg mb-2">我的书架</h3>
+                        <p class="text-gray-600">上传和管理PDF文档，方便阅读</p>
+                    </div>
+                    
+                    <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 hover:shadow-lg transition cursor-pointer card-shadow" onclick="navigateTo('music')">
+                        <div class="bg-purple-100 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                            <i class="fa fa-music text-accent text-xl"></i>
+                        </div>
+                        <h3 class="font-bold text-lg mb-2">音乐播放器</h3>
+                        <p class="text-gray-600">访问您的B站收藏音乐</p>
+                    </div>
+                    
+                    <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-5 hover:shadow-lg transition cursor-pointer card-shadow" onclick="navigateTo('games')">
+                        <div class="bg-yellow-100 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                            <i class="fa fa-gamepad text-yellow-600 text-xl"></i>
+                        </div>
+                        <h3 class="font-bold text-lg mb-2">休闲游戏</h3>
+                        <p class="text-gray-600">工作间隙放松一下</p>
+                    </div>
+                    
+                    <div class="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl p-5 hover:shadow-lg transition cursor-pointer card-shadow" onclick="navigateTo('notes')">
+                        <div class="bg-red-100 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                            <i class="fa fa-sticky-note text-red-500 text-xl"></i>
+                        </div>
+                        <h3 class="font-bold text-lg mb-2">备忘录</h3>
+                        <p class="text-gray-600">记录想法和待办事项</p>
+                    </div>
+                    
+                    <div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-5 hover:shadow-lg transition cursor-pointer card-shadow" onclick="navigateTo('chat')">
+                        <div class="bg-indigo-100 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                            <i class="fa fa-comments text-indigo-500 text-xl"></i>
+                        </div>
+                        <h3 class="font-bold text-lg mb-2">AI对话</h3>
+                        <p class="text-gray-600">与大语言模型对话</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 今日状态 -->
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <h3 class="font-bold text-xl mb-4">今日状态</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h4 class="text-gray-500 mb-2">已工作时间</h4>
+                        <p id="today-worked" class="text-2xl font-bold">0小时0分钟</p>
+                    </div>
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h4 class="text-gray-500 mb-2">已阅读文档</h4>
+                        <p id="today-read" class="text-2xl font-bold">0篇</p>
+                    </div>
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h4 class="text-gray-500 mb-2">已创建备忘录</h4>
+                        <p id="today-notes" class="text-2xl font-bold">0篇</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 计时器页面 -->
+        <div id="timer" class="page">
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <h2 class="text-2xl font-bold mb-6">工作计时器</h2>
+                
+                <div class="max-w-2xl mx-auto">
+                    <div class="text-center mb-8">
+                        <p class="text-gray-500 mb-2">今日工作目标</p>
+                        <div class="flex items-center justify-center gap-3 mb-2">
+                            <input type="number" id="timer-page-hours" value="7" min="0.5" step="0.5" 
+                                   class="w-20 border rounded p-2 text-center text-xl">
+                            <span class="text-xl">小时</span>
+                        </div>
+                        <p class="text-gray-500 mb-4">预计下班时间: <span id="timer-page-end-time" class="font-medium">19:49</span></p>
+                        <div id="timer-page-display" class="text-6xl font-bold mb-6">07:00:00</div>
+                        
+                        <div class="flex justify-center gap-4">
+                            <button id="timer-page-start" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition text-lg">
+                                <i class="fa fa-play mr-2"></i> 开始工作
+                            </button>
+                            <button id="timer-page-pause" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-lg transition text-lg hidden">
+                                <i class="fa fa-pause mr-2"></i> 暂停
+                            </button>
+                            <button id="timer-page-reset" class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg transition text-lg">
+                                <i class="fa fa-refresh mr-2"></i> 重置
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t pt-6">
+                        <h3 class="font-bold text-lg mb-4">工作记录</h3>
+                        <div class="space-y-3" id="work-records">
+                            <!-- 工作记录将在这里动态生成 -->
+                            <div class="text-gray-500 text-center py-4">暂无工作记录</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 书架页面 -->
+        <div id="books" class="page">
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <div class="flex flex-wrap justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">我的书架</h2>
+                    <button id="upload-pdf-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition flex items-center">
+                        <i class="fa fa-upload mr-2"></i> 上传PDF
+                    </button>
+                </div>
+                
+                <!-- 上传PDF的模态框 -->
+                <div id="upload-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+                    <div class="bg-white rounded-xl p-6 max-w-md w-full">
+                        <h3 class="text-xl font-bold mb-4">上传PDF文档</h3>
+                        <form id="pdf-upload-form">
+                            <div class="mb-4">
+                                <label class="block text-gray-700 mb-2" for="pdf-title">文档标题</label>
+                                <input type="text" id="pdf-title" class="w-full border rounded p-2" required>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-gray-700 mb-2" for="pdf-file">选择PDF文件</label>
+                                <input type="file" id="pdf-file" accept=".pdf" class="w-full border rounded p-2" required>
+                            </div>
+                            <div class="flex justify-end gap-3">
+                                <button type="button" id="cancel-upload" class="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-100 transition">
+                                    取消
+                                </button>
+                                <button type="submit" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition">
+                                    上传
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- 书架 -->
+                <div class="book-shelf grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                    <!-- 示例书籍 -->
+                    <div class="book bg-white rounded-lg overflow-hidden card-shadow cursor-pointer" data-id="1">
+                        <div class="h-48 bg-gray-200 flex items-center justify-center">
+                            <i class="fa fa-file-pdf-o text-5xl text-red-500"></i>
+                        </div>
+                        <div class="p-3">
+                            <h3 class="font-bold truncate">示例文档1</h3>
+                            <p class="text-sm text-gray-500">2023-10-01</p>
+                        </div>
+                    </div>
+                    
+                    <div class="book bg-white rounded-lg overflow-hidden card-shadow cursor-pointer" data-id="2">
+                        <div class="h-48 bg-gray-200 flex items-center justify-center">
+                            <i class="fa fa-file-pdf-o text-5xl text-red-500"></i>
+                        </div>
+                        <div class="p-3">
+                            <h3 class="font-bold truncate">示例文档2</h3>
+                            <p class="text-sm text-gray-500">2023-10-02</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 更多书籍将在这里动态生成 -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- PDF阅读器模态框 - 修复了关闭按钮问题 -->
+        <div id="pdf-viewer-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+                <div class="p-4 border-b flex justify-between items-center">
+                    <h3 id="pdf-viewer-title" class="font-bold text-lg"></h3>
+                    <div class="flex gap-2">
+                        <div id="pdf-loading-indicator" class="hidden">
+                            <i class="fa fa-circle-o-notch fa-spin text-primary"></i>
+                        </div>
+                        <button id="close-pdf-viewer" class="text-gray-500 hover:text-gray-800 p-2">
+                            <i class="fa fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-auto p-4">
+                    <div id="pdf-container" class="bg-white min-h-[600px] flex justify-center items-center">
+                        <!-- PDF内容将在这里显示 -->
+                    </div>
+                </div>
+                <div class="p-4 border-t flex justify-between items-center">
+                    <div>
+                        <span id="pdf-page-info">第 1 页 / 共 ? 页</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="pdf-prev-page" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                            上一页
+                        </button>
+                        <button id="pdf-next-page" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                            下一页
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 音乐页面 -->
+        <div id="music" class="page">
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <h2 class="text-2xl font-bold mb-6">音乐播放器</h2>
+                
+                <div class="mb-6">
+                    <h3 class="font-bold mb-3">B站收藏设置</h3>
+                    <div class="flex flex-col md:flex-row gap-3 items-start md:items-center">
+                        <input type="url" id="bilibili-url" 
+                               value="https://www.bilibili.com/list/ml3636602919?spm_id_from=333.1387.0.0&oid=113357139019648&bvid=BV1161cYeEMi"
+                               class="flex-1 border rounded p-2">
+                        <button id="save-music-url" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition">
+                            保存设置
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="border rounded-lg overflow-hidden">
+                    <div class="aspect-video w-full bg-gray-100 relative">
+                        <iframe id="music-iframe" 
+                                src="https://www.bilibili.com/list/ml3636602919?spm_id_from=333.1387.0.0&oid=113357139019648&bvid=BV1161cYeEMi" 
+                                frameborder="0" 
+                                class="w-full h-full"
+                                allowfullscreen>
+                        </iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 游戏页面 - 调整了大小适配屏幕 -->
+        <div id="games" class="page">
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <h2 class="text-2xl font-bold mb-6">休闲游戏</h2>
+                
+                <div class="mb-6">
+                    <h3 class="font-bold mb-3">选择游戏</h3>
+                    <div class="flex flex-wrap gap-3">
+                        <button class="game-selector active bg-primary text-white px-4 py-2 rounded-lg transition" data-game="1024">
+                            1024游戏
+                        </button>
+                        <button class="game-selector bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg transition" data-game="gomoku">
+                            五子棋
+                        </button>
+                        <button id="upload-game-btn" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg transition flex items-center">
+                            <i class="fa fa-upload mr-2"></i> 上传游戏
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 游戏容器 - 限制最大宽度 -->
+                <div class="max-w-2xl mx-auto">
+                    <!-- 1024游戏 -->
+                    <div id="game-1024" class="game-content">
+                        <div>
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <p class="text-gray-600">分数</p>
+                                    <p id="score-1024" class="text-2xl font-bold">0</p>
+                                </div>
+                                <button id="restart-1024" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg transition">
+                                    重新开始
+                                </button>
+                            </div>
+                            <div class="bg-gray-200 p-3 rounded-lg">
+                                <div class="grid" id="grid-1024">
+                                    <!-- 游戏格子将在这里动态生成 -->
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-500 mt-4 text-center">
+                                使用方向键移动方块，相同数字碰撞将合并
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- 五子棋游戏 -->
+                    <div id="gomoku" class="game-content hidden">
+                        <div>
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <p class="text-gray-600">当前回合</p>
+                                    <div class="flex items-center">
+                                        <div class="stone black inline-block mr-2"></div>
+                                        <span id="current-player">黑方</span>
+                                    </div>
+                                </div>
+                                <button id="restart-gomoku" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg transition">
+                                    重新开始
+                                </button>
+                            </div>
+                            <div class="board rounded-lg" id="gomoku-board">
+                                <!-- 棋盘将在这里动态生成 -->
+                            </div>
+                            <p class="text-sm text-gray-500 mt-4 text-center">
+                                点击棋盘落子，先形成五子连线者获胜
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 备忘录页面 -->
+        <div id="notes" class="page">
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <div class="flex flex-wrap justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">备忘录</h2>
+                    <button id="create-note-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition flex items-center">
+                        <i class="fa fa-plus mr-2"></i> 新建备忘录
+                    </button>
+                </div>
+                
+                <!-- 备忘录列表 -->
+                <div id="notes-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- 示例备忘录 -->
+                    <div class="note-card bg-white border border-gray-200 rounded-lg overflow-hidden card-shadow cursor-pointer" data-id="1">
+                        <div class="p-4">
+                            <h3 class="font-bold text-lg mb-2 truncate">今日工作计划</h3>
+                            <p class="text-gray-600 text-sm line-clamp-3 mb-3">完成项目文档编写，召开团队会议，准备下周工作计划...</p>
+                            <p class="text-xs text-gray-400">最后编辑：2023-10-01 14:30</p>
+                        </div>
+                    </div>
+                    
+                    <div class="note-card bg-white border border-gray-200 rounded-lg overflow-hidden card-shadow cursor-pointer" data-id="2">
+                        <div class="p-4">
+                            <h3 class="font-bold text-lg mb-2 truncate">会议记录</h3>
+                            <p class="text-gray-600 text-sm line-clamp-3 mb-3">讨论了新功能的实现方案，分配了任务，确定了截止日期...</p>
+                            <p class="text-xs text-gray-400">最后编辑：2023-10-02 10:15</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 备忘录编辑器 -->
+                <div id="note-editor" class="border border-gray-200 rounded-lg overflow-hidden hidden">
+                    <div class="border-b p-4 flex justify-between items-center">
+                        <input type="text" id="note-title" placeholder="请输入标题..." class="text-xl font-bold border-none outline-none w-full">
+                        <div class="flex gap-2">
+                            <button id="delete-note-btn" class="text-red-500 hover:text-red-700 p-2">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                            <button id="close-note-btn" class="text-gray-500 hover:text-gray-800 p-2">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 编辑器工具栏 -->
+                    <div class="note-editor-toolbar border-b p-2 flex flex-wrap gap-1 bg-gray-50">
+                        <button id="format-bold" class="p-2 rounded hover:bg-gray-200" title="粗体 (Ctrl+B)">
+                            <i class="fa fa-bold"></i>
+                        </button>
+                        <button id="format-italic" class="p-2 rounded hover:bg-gray-200" title="斜体 (Ctrl+I)">
+                            <i class="fa fa-italic"></i>
+                        </button>
+                        <button id="format-underline" class="p-2 rounded hover:bg-gray-200" title="下划线 (Ctrl+U)">
+                            <i class="fa fa-underline"></i>
+                        </button>
+                        <span class="h-6 border-r border-gray-300 mx-1"></span>
+                        <button id="format-heading" class="p-2 rounded hover:bg-gray-200" title="标题">
+                            <i class="fa fa-header"></i>
+                        </button>
+                        <button id="format-list-ul" class="p-2 rounded hover:bg-gray-200" title="无序列表">
+                            <i class="fa fa-list-ul"></i>
+                        </button>
+                        <button id="format-list-ol" class="p-2 rounded hover:bg-gray-200" title="有序列表">
+                            <i class="fa fa-list-ol"></i>
+                        </button>
+                        <span class="h-6 border-r border-gray-300 mx-1"></span>
+                        <label class="p-2 rounded hover:bg-gray-200 cursor-pointer" title="插入图片">
+                            <i class="fa fa-image"></i>
+                            <input type="file" id="insert-image" accept="image/*" class="hidden">
+                        </label>
+                        <button id="format-link" class="p-2 rounded hover:bg-gray-200" title="插入链接">
+                            <i class="fa fa-link"></i>
+                        </button>
+                        <span class="h-6 border-r border-gray-300 mx-1"></span>
+                        <button id="save-note-btn" class="p-2 rounded hover:bg-gray-200 ml-auto" title="保存 (Ctrl+S)">
+                            <i class="fa fa-save"></i> 保存
+                        </button>
+                    </div>
+                    
+                    <!-- 编辑区域 -->
+                    <div id="note-content" class="note-content p-4 bg-white" contenteditable="true">
+                        在此输入备忘录内容...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 对话页面 - 接入Qwen API -->
+        <div id="chat" class="page">
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <h2 class="text-2xl font-bold mb-6">AI对话</h2>
+                
+                <div class="mb-6">
+                    <h3 class="font-bold mb-3">Qwen API 设置</h3>
+                    <div class="flex flex-col md:flex-row gap-3 items-start md:items-center">
+                        <input type="password" id="qwen-api-key" placeholder="请输入您的Qwen API密钥" 
+                               class="flex-1 border rounded p-2">
+                        <button id="save-api-key" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition">
+                            保存密钥
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="border rounded-lg overflow-hidden flex flex-col h-[600px]">
+                    <!-- 对话内容区域 -->
+                    <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
+                        <!-- 示例消息 -->
+                        <div class="flex items-start gap-3">
+                            <div class="bg-gray-200 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fa fa-robot text-gray-600"></i>
+                            </div>
+                            <div class="bg-gray-100 rounded-lg rounded-tl-none p-3 max-w-[80%]">
+                                您好！我是您的AI助手，有什么可以帮助您的吗？
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 输入区域 -->
+                    <div class="border-t p-4">
+                        <form id="chat-form" class="flex gap-3">
+                            <textarea id="chat-input" placeholder="请输入您的问题..." 
+                                      class="flex-1 border rounded p-2 resize-none" rows="3"></textarea>
+                            <button type="submit" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition flex-shrink-0">
+                                <i class="fa fa-paper-plane"></i>
+                            </button>
+                        </form>
+                        <div id="chat-status" class="text-sm text-gray-500 mt-2 hidden">
+                            <i class="fa fa-circle-o-notch fa-spin"></i> 思考中...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-white py-6 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p>多功能工作空间 &copy; 2023</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        // 全局变量
+        let timerInterval = null;
+        let remainingTime = 7 * 60 * 60; // 默认7小时，单位：秒
+        let isTimerRunning = false;
+        let workRecords = [];
+        let pdfBooks = [
+            { id: 1, title: "示例文档1", date: "2023-10-01", file_path: "sample1.pdf" },
+            { id: 2, title: "示例文档2", date: "2023-10-02", file_path: "sample2.pdf" }
+        ];
+        let notes = [
+            { 
+                id: 1, 
+                title: "今日工作计划", 
+                content: "<p>完成项目文档编写，召开团队会议，准备下周工作计划...</p>",
+                last_edited: "2023-10-01 14:30"
+            },
+            { 
+                id: 2, 
+                title: "会议记录", 
+                content: "<p>讨论了新功能的实现方案，分配了任务，确定了截止日期...</p>",
+                last_edited: "2023-10-02 10:15"
+            }
+        ];
+        let currentNoteId = null;
+        let pdfDoc = null;
+        let currentPdfPage = 1;
+        
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化导航
+            initNavigation();
+            
+            // 初始化计时器
+            initTimer();
+            
+            // 初始化书架
+            initBooks();
+            
+            // 初始化音乐播放器
+            initMusic();
+            
+            // 初始化游戏
+            initGames();
+            
+            // 初始化备忘录
+            initNotes();
+            
+            // 初始化对话界面
+            initChat();
+            
+            // 加载本地存储的数据
+            loadFromLocalStorage();
+        });
+        
+        // 初始化导航
+        function initNavigation() {
+            const navButtons = document.querySelectorAll('.nav-btn');
+            
+            navButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // 移除所有活动状态
+                    navButtons.forEach(btn => btn.classList.remove('active', 'bg-primary', 'text-white'));
+                    navButtons.forEach(btn => btn.classList.add('hover:bg-gray-100'));
+                    
+                    // 设置当前按钮为活动状态
+                    this.classList.add('active', 'bg-primary', 'text-white');
+                    this.classList.remove('hover:bg-gray-100');
+                    
+                    // 显示对应的页面
+                    const pageId = this.getAttribute('data-page');
+                    showPage(pageId);
+                });
+            });
+            
+            // 设置初始活动状态
+            document.querySelector('.nav-btn.active').classList.add('bg-primary', 'text-white');
+            document.querySelector('.nav-btn.active').classList.remove('hover:bg-gray-100');
+        }
+        
+        // 显示指定页面
+        function showPage(pageId) {
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            document.getElementById(pageId).classList.add('active');
+        }
+        
+        // 导航到指定页面
+        function navigateTo(pageId) {
+            const navButton = document.querySelector(`.nav-btn[data-page="${pageId}"]`);
+            if (navButton) {
+                navButton.click();
+            }
+        }
+        
+        // 初始化计时器 - 右下角隐藏式
+        function initTimer() {
+            const timerWidget = document.getElementById('timer-widget');
+            const timerHandle = document.getElementById('timer-handle');
+            const minimizeTimer = document.getElementById('minimize-timer');
+            
+            // 点击手柄显示/隐藏计时器
+            timerHandle.addEventListener('click', function() {
+                timerWidget.classList.toggle('timer-hidden');
+                timerWidget.classList.toggle('timer-visible');
+                
+                // 切换手柄图标
+                const icon = this.querySelector('i');
+                if (timerWidget.classList.contains('timer-visible')) {
+                    icon.classList.remove('fa-chevron-left');
+                    icon.classList.add('fa-chevron-right');
+                } else {
+                    icon.classList.remove('fa-chevron-right');
+                    icon.classList.add('fa-chevron-left');
+                }
+            });
+            
+            // 鼠标悬停显示计时器
+            timerWidget.addEventListener('mouseenter', function() {
+                if (this.classList.contains('timer-hidden')) {
+                    this.classList.remove('timer-hidden');
+                    this.classList.add('timer-visible');
+                    const icon = timerHandle.querySelector('i');
+                    icon.classList.remove('fa-chevron-left');
+                    icon.classList.add('fa-chevron-right');
+                }
+            });
+            
+            // 最小化按钮
+            minimizeTimer.addEventListener('click', function() {
+                timerWidget.classList.add('timer-hidden');
+                timerWidget.classList.remove('timer-visible');
+                const icon = timerHandle.querySelector('i');
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-left');
+            });
+            
+            // 更新预计结束时间
+            updateEndTime();
+            
+            // 小部件计时器控制
+            document.getElementById('start-timer').addEventListener('click', startTimer);
+            document.getElementById('pause-timer').addEventListener('click', pauseTimer);
+            document.getElementById('reset-timer').addEventListener('click', resetTimer);
+            document.getElementById('work-hours').addEventListener('change', function() {
+                const hours = parseFloat(this.value) || 0;
+                remainingTime = Math.round(hours * 60 * 60);
+                updateTimerDisplay();
+                updateEndTime();
+                
+                // 同步到计时器页面
+                document.getElementById('timer-page-hours').value = hours;
+            });
+            
+            // 页面计时器控制
+            document.getElementById('timer-page-start').addEventListener('click', startTimer);
+            document.getElementById('timer-page-pause').addEventListener('click', pauseTimer);
+            document.getElementById('timer-page-reset').addEventListener('click', resetTimer);
+            document.getElementById('timer-page-hours').addEventListener('change', function() {
+                const hours = parseFloat(this.value) || 0;
+                remainingTime = Math.round(hours * 60 * 60);
+                updateTimerDisplay();
+                updateEndTime();
+                
+                // 同步到小部件
+                document.getElementById('work-hours').value = hours;
+            });
+            
+            // 更新计时器显示
+            updateTimerDisplay();
+        }
+        
+        // 开始计时器
+        function startTimer() {
+            if (isTimerRunning) return;
+            
+            isTimerRunning = true;
+            document.getElementById('start-timer').classList.add('hidden');
+            document.getElementById('pause-timer').classList.remove('hidden');
+            document.getElementById('timer-page-start').classList.add('hidden');
+            document.getElementById('timer-page-pause').classList.remove('hidden');
+            
+            timerInterval = setInterval(function() {
+                remainingTime--;
+                updateTimerDisplay();
+                
+                if (remainingTime <= 0) {
+                    clearInterval(timerInterval);
+                    isTimerRunning = false;
+                    document.getElementById('start-timer').classList.remove('hidden');
+                    document.getElementById('pause-timer').classList.add('hidden');
+                    document.getElementById('timer-page-start').classList.remove('hidden');
+                    document.getElementById('timer-page-pause').classList.add('hidden');
+                    
+                    // 记录完成的工作
+                    const hours = parseFloat(document.getElementById('work-hours').value) || 0;
+                    addWorkRecord(hours);
+                    
+                    // 提示完成
+                    alert('工作时间已结束！');
+                }
+                
+                // 保存状态
+                saveToLocalStorage();
+            }, 1000);
+        }
+        
+        // 暂停计时器
+        function pauseTimer() {
+            if (!isTimerRunning) return;
+            
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            document.getElementById('start-timer').classList.remove('hidden');
+            document.getElementById('pause-timer').classList.add('hidden');
+            document.getElementById('timer-page-start').classList.remove('hidden');
+            document.getElementById('timer-page-pause').classList.add('hidden');
+            
+            // 保存状态
+            saveToLocalStorage();
+        }
+        
+        // 重置计时器
+        function resetTimer() {
+            pauseTimer();
+            const hours = parseFloat(document.getElementById('work-hours').value) || 0;
+            remainingTime = Math.round(hours * 60 * 60);
+            updateTimerDisplay();
+            updateEndTime();
+            
+            // 保存状态
+            saveToLocalStorage();
+        }
+        
+        // 更新计时器显示
+        function updateTimerDisplay() {
+            const hours = Math.floor(remainingTime / 3600);
+            const minutes = Math.floor((remainingTime % 3600) / 60);
+            const seconds = remainingTime % 60;
+            
+            const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            document.getElementById('countdown').textContent = timeString;
+            document.getElementById('timer-page-display').textContent = timeString;
+        }
+        
+        // 更新预计结束时间
+        function updateEndTime() {
+            const now = new Date();
+            const endTime = new Date(now.getTime() + remainingTime * 1000);
+            
+            const hours = endTime.getHours().toString().padStart(2, '0');
+            const minutes = endTime.getMinutes().toString().padStart(2, '0');
+            
+            document.getElementById('end-time').textContent = `${hours}:${minutes}`;
+            document.getElementById('timer-page-end-time').textContent = `${hours}:${minutes}`;
+        }
+        
+        // 添加工作记录
+        function addWorkRecord(hours) {
+            const now = new Date();
+            const dateString = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+            const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            const record = {
+                id: Date.now(),
+                date: dateString,
+                time: timeString,
+                hours: hours
+            };
+            
+            workRecords.unshift(record);
+            renderWorkRecords();
+            updateTodayStats();
+            
+            // 保存状态
+            saveToLocalStorage();
+        }
+        
+        // 渲染工作记录
+        function renderWorkRecords() {
+            const container = document.getElementById('work-records');
+            
+            if (workRecords.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-center py-4">暂无工作记录</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            workRecords.forEach(record => {
+                const recordElement = document.createElement('div');
+                recordElement.className = 'border rounded-lg p-3 flex justify-between items-center';
+                recordElement.innerHTML = `
+                    <div>
+                        <p class="font-medium">${record.date} ${record.time}</p>
+                        <p class="text-sm text-gray-500">完成了 ${record.hours} 小时的工作</p>
+                    </div>
+                    <button class="text-red-500 hover:text-red-700" onclick="deleteWorkRecord(${record.id})">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                `;
+                container.appendChild(recordElement);
+            });
+        }
+        
+        // 删除工作记录
+        function deleteWorkRecord(id) {
+            workRecords = workRecords.filter(record => record.id !== id);
+            renderWorkRecords();
+            updateTodayStats();
+            
+            // 保存状态
+            saveToLocalStorage();
+        }
+        
+        // 初始化书架 - 修复了PDF关闭按钮问题
+        function initBooks() {
+            // 上传PDF按钮
+            document.getElementById('upload-pdf-btn').addEventListener('click', function() {
+                document.getElementById('upload-modal').classList.remove('hidden');
+                document.getElementById('pdf-title').focus();
+            });
+            
+            // 取消上传
+            document.getElementById('cancel-upload').addEventListener('click', function() {
+                document.getElementById('upload-modal').classList.add('hidden');
+                document.getElementById('pdf-upload-form').reset();
+            });
+            
+            // 提交上传表单
+            document.getElementById('pdf-upload-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const title = document.getElementById('pdf-title').value;
+                const fileInput = document.getElementById('pdf-file');
+                
+                if (title && fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const now = new Date();
+                    const dateString = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+                    
+                    // 创建新书籍记录
+                    const newBook = {
+                        id: Date.now(),
+                        title: title,
+                        date: dateString,
+                        file_path: file.name // 在实际应用中，这里应该上传到服务器并保存文件路径
+                    };
+                    
+                    // 模拟上传
+                    const formData = new FormData();
+                    formData.append('title', title);
+                    formData.append('file', file);
+                    
+                    // 显示加载状态
+                    const submitButton = this.querySelector('button[type="submit"]');
+                    const originalText = submitButton.innerHTML;
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="fa fa-circle-o-notch fa-spin mr-1"></i> 上传中...';
+                    
+                    // 模拟API请求
+                    setTimeout(() => {
+                        pdfBooks.push(newBook);
+                        renderBooks();
+                        
+                        // 关闭模态框并重置表单
+                        document.getElementById('upload-modal').classList.add('hidden');
+                        this.reset();
+                        
+                        // 恢复按钮状态
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalText;
+                        
+                        // 保存状态
+                        saveToLocalStorage();
+                    }, 1500);
+                }
+            });
+            
+            // 关闭PDF阅读器 - 修复了关闭按钮问题
+            document.getElementById('close-pdf-viewer').addEventListener('click', function() {
+                document.getElementById('pdf-viewer-modal').classList.add('hidden');
+                pdfDoc = null; // 清除PDF实例
+            });
+            
+            // PDF翻页控制
+            document.getElementById('pdf-prev-page').addEventListener('click', function() {
+                if (pdfDoc && currentPdfPage > 1) {
+                    currentPdfPage--;
+                    renderPdfPage();
+                }
+            });
+            
+            document.getElementById('pdf-next-page').addEventListener('click', function() {
+                if (pdfDoc && currentPdfPage < pdfDoc.numPages) {
+                    currentPdfPage++;
+                    renderPdfPage();
+                }
+            });
+            
+            // 渲染书籍
+            renderBooks();
+        }
+        
+        // 渲染书籍
+        function renderBooks() {
+            const shelf = document.querySelector('.book-shelf');
+            shelf.innerHTML = '';
+            
+            pdfBooks.forEach(book => {
+                const bookElement = document.createElement('div');
+                bookElement.className = 'book bg-white rounded-lg overflow-hidden card-shadow cursor-pointer';
+                bookElement.setAttribute('data-id', book.id);
+                bookElement.innerHTML = `
+                    <div class="h-48 bg-gray-200 flex items-center justify-center">
+                        <i class="fa fa-file-pdf-o text-5xl text-red-500"></i>
+                    </div>
+                    <div class="p-3">
+                        <h3 class="font-bold truncate">${book.title}</h3>
+                        <p class="text-sm text-gray-500">${book.date}</p>
+                    </div>
+                `;
+                
+                // 点击打开PDF
+                bookElement.addEventListener('click', function() {
+                    openPdfViewer(book.id);
+                });
+                
+                shelf.appendChild(bookElement);
+            });
+        }
+        
+        // 打开PDF阅读器 - 修复了加载问题和关闭按钮
+        function openPdfViewer(bookId) {
+            const book = pdfBooks.find(b => b.id === bookId);
+            if (!book) return;
+            
+            // 显示PDF查看器和加载状态
+            document.getElementById('pdf-viewer-title').textContent = book.title;
+            document.getElementById('pdf-viewer-modal').classList.remove('hidden');
+            document.getElementById('pdf-loading-indicator').classList.remove('hidden');
+            document.getElementById('pdf-container').innerHTML = '';
+            currentPdfPage = 1;
+            
+            // 尝试加载PDF
+            const pdfContainer = document.getElementById('pdf-container');
+            
+            // 对于示例，我们使用PDF.js提供的示例文档
+            // 实际应用中应替换为你的后端API地址
+            const pdfUrl = book.file_path.includes('http') ? book.file_path : 
+                           `https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/examples/learning/helloworld.pdf`;
+            
+            // 使用PDF.js加载PDF
+            pdfjsLib.getDocument(pdfUrl).promise.then(function(pdf) {
+                pdfDoc = pdf;
+                
+                // 更新页面信息
+                document.getElementById('pdf-page-info').textContent = `第 ${currentPdfPage} 页 / 共 ${pdf.numPages} 页`;
+                
+                // 渲染第一页
+                renderPdfPage();
+                
+                // 隐藏加载状态
+                document.getElementById('pdf-loading-indicator').classList.add('hidden');
+                
+            }).catch(function(error) {
+                console.error('PDF加载失败:', error);
+                pdfContainer.innerHTML = `
+                    <div class="text-center py-10">
+                        <i class="fa fa-exclamation-triangle text-4xl text-yellow-500 mb-4"></i>
+                        <h3 class="text-xl font-bold mb-2">加载失败</h3>
+                        <p class="text-gray-600">无法加载PDF文档，请稍后重试</p>
+                        <p class="text-sm text-gray-500 mt-2">错误: ${error.message}</p>
+                    </div>
+                `;
+                // 隐藏加载状态
+                document.getElementById('pdf-loading-indicator').classList.add('hidden');
+            });
+        }
+        
+        // 渲染PDF页面
+        function renderPdfPage() {
+            if (!pdfDoc) return;
+            
+            pdfDoc.getPage(currentPdfPage).then(function(page) {
+                // 设置缩放比例，适应屏幕
+                const containerWidth = document.getElementById('pdf-container').clientWidth;
+                const viewport = page.getViewport({ scale: 1 });
+                const scale = Math.min(containerWidth / viewport.width, 1.5); // 最大缩放1.5倍
+                const scaledViewport = page.getViewport({ scale: scale });
+                
+                // 创建画布
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = scaledViewport.height;
+                canvas.width = scaledViewport.width;
+                
+                // 清空容器并添加画布
+                document.getElementById('pdf-container').innerHTML = '';
+                document.getElementById('pdf-container').appendChild(canvas);
+                
+                // 更新页面信息
+                document.getElementById('pdf-page-info').textContent = 
+                    `第 ${currentPdfPage} 页 / 共 ${pdfDoc.numPages} 页`;
+                
+                // 更新翻页按钮状态
+                document.getElementById('pdf-prev-page').disabled = currentPdfPage <= 1;
+                document.getElementById('pdf-next-page').disabled = currentPdfPage >= pdfDoc.numPages;
+                
+                // 渲染页面
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: scaledViewport
+                };
+                
+                page.render(renderContext);
+            });
+        }
+        
+        // 初始化音乐播放器
+        function initMusic() {
+            // 保存音乐URL设置
+            document.getElementById('save-music-url').addEventListener('click', function() {
+                const url = document.getElementById('bilibili-url').value;
+                if (url) {
+                    document.getElementById('music-iframe').src = url;
+                    
+                    // 保存到本地存储
+                    localStorage.setItem('bilibiliMusicUrl', url);
+                    
+                    // 显示成功提示
+                    alert('设置已保存');
+                }
+            });
+            
+            // 加载已保存的URL
+            const savedUrl = localStorage.getItem('bilibiliMusicUrl');
+            if (savedUrl) {
+                document.getElementById('bilibili-url').value = savedUrl;
+                document.getElementById('music-iframe').src = savedUrl;
+            }
+        }
+        
+        // 初始化游戏 - 调整了大小适配屏幕
+        function initGames() {
+            // 游戏选择器
+            const gameSelectors = document.querySelectorAll('.game-selector');
+            gameSelectors.forEach(selector => {
+                selector.addEventListener('click', function() {
+                    // 移除所有活动状态
+                    gameSelectors.forEach(s => {
+                        s.classList.remove('active', 'bg-primary', 'text-white');
+                        s.classList.add('bg-gray-200', 'hover:bg-gray-300');
+                    });
+                    
+                    // 设置当前选择器为活动状态
+                    this.classList.add('active', 'bg-primary', 'text-white');
+                    this.classList.remove('bg-gray-200', 'hover:bg-gray-300');
+                    
+                    // 显示对应的游戏
+                    const gameId = this.getAttribute('data-game');
+                    document.querySelectorAll('.game-content').forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    document.getElementById(gameId).classList.remove('hidden');
+                });
+            });
+            
+            // 初始化1024游戏 - 适配屏幕大小
+            initGame1024();
+            
+            // 初始化五子棋 - 适配屏幕大小
+            initGomoku();
+            
+            // 上传游戏按钮
+            document.getElementById('upload-game-btn').addEventListener('click', function() {
+                alert('在实际应用中，这里将打开游戏上传界面');
+            });
+        }
+        
+        // 初始化1024游戏 - 调整大小
+        function initGame1024() {
+            const gridSize = 4;
+            let grid = [];
+            let score = 0;
+            const gridElement = document.getElementById('grid-1024');
+            
+            // 根据屏幕大小设置合适的格子尺寸
+            function setGridSize() {
+                const containerWidth = gridElement.parentElement.clientWidth;
+                const cellSize = Math.floor((containerWidth - 30) / gridSize); // 减去间距
+                gridElement.style.gridTemplateColumns = `repeat(${gridSize}, ${cellSize}px)`;
+            }
+            
+            // 初始化网格
+            function initializeGrid() {
+                grid = Array(gridSize).fill().map(() => Array(gridSize).fill(0));
+                score = 0;
+                addNewTile();
+                addNewTile();
+                renderGrid();
+                updateScore();
+                setGridSize(); // 设置网格大小
+            }
+            
+            // 添加新方块
+            function addNewTile() {
+                const emptyTiles = [];
+                
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
+                        if (grid[i][j] === 0) {
+                            emptyTiles.push({i, j});
+                        }
+                    }
+                }
+                
+                if (emptyTiles.length > 0) {
+                    const {i, j} = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
+                    grid[i][j] = Math.random() < 0.9 ? 2 : 4;
+                }
+            }
+            
+            // 渲染网格
+            function renderGrid() {
+                gridElement.innerHTML = '';
+                
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
+                        const value = grid[i][j];
+                        const cell = document.createElement('div');
+                        cell.className = `cell rounded-lg ${getTileClass(value)}`;
+                        cell.textContent = value !== 0 ? value : '';
+                        gridElement.appendChild(cell);
+                    }
+                }
+            }
+            
+            // 获取方块样式类
+            function getTileClass(value) {
+                const classes = {
+                    0: 'bg-gray-300',
+                    2: 'bg-yellow-100 text-gray-800',
+                    4: 'bg-yellow-200 text-gray-800',
+                    8: 'bg-orange-100 text-white',
+                    16: 'bg-orange-200 text-white',
+                    32: 'bg-orange-300 text-white',
+                    64: 'bg-orange-400 text-white',
+                    128: 'bg-yellow-300 text-white text-xl',
+                    256: 'bg-yellow-400 text-white text-xl',
+                    512: 'bg-yellow-500 text-white text-xl',
+                    1024: 'bg-yellow-600 text-white text-2xl',
+                    2048: 'bg-yellow-700 text-white text-2xl'
+                };
+                
+                return classes[value] || 'bg-red-500 text-white text-2xl';
+            }
+            
+            // 更新分数
+            function updateScore() {
+                document.getElementById('score-1024').textContent = score;
+            }
+            
+            // 移动方块
+            function move(direction) {
+                let moved = false;
+                let merged = Array(gridSize).fill().map(() => Array(gridSize).fill(false));
+                
+                // 根据方向处理移动
+                switch(direction) {
+                    case 'up':
+                        for (let j = 0; j < gridSize; j++) {
+                            for (let i = 1; i < gridSize; i++) {
+                                if (grid[i][j] !== 0) {
+                                    let row = i;
+                                    while (row > 0 && grid[row - 1][j] === 0) {
+                                        grid[row - 1][j] = grid[row][j];
+                                        grid[row][j] = 0;
+                                        row--;
+                                        moved = true;
+                                    }
+                                    
+                                    if (row > 0 && grid[row - 1][j] === grid[row][j] && !merged[row - 1][j]) {
+                                        grid[row - 1][j] *= 2;
+                                        score += grid[row - 1][j];
+                                        grid[row][j] = 0;
+                                        merged[row - 1][j] = true;
+                                        moved = true;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                        
+                    case 'down':
+                        for (let j = 0; j < gridSize; j++) {
+                            for (let i = gridSize - 2; i >= 0; i--) {
+                                if (grid[i][j] !== 0) {
+                                    let row = i;
+                                    while (row < gridSize - 1 && grid[row + 1][j] === 0) {
+                                        grid[row + 1][j] = grid[row][j];
+                                        grid[row][j] = 0;
+                                        row++;
+                                        moved = true;
+                                    }
+                                    
+                                    if (row < gridSize - 1 && grid[row + 1][j] === grid[row][j] && !merged[row + 1][j]) {
+                                        grid[row + 1][j] *= 2;
+                                        score += grid[row + 1][j];
+                                        grid[row][j] = 0;
+                                        merged[row + 1][j] = true;
+                                        moved = true;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                        
+                    case 'left':
+                        for (let i = 0; i < gridSize; i++) {
+                            for (let j = 1; j < gridSize; j++) {
+                                if (grid[i][j] !== 0) {
+                                    let col = j;
+                                    while (col > 0 && grid[i][col - 1] === 0) {
+                                        grid[i][col - 1] = grid[i][col];
+                                        grid[i][col] = 0;
+                                        col--;
+                                        moved = true;
+                                    }
+                                    
+                                    if (col > 0 && grid[i][col - 1] === grid[i][col] && !merged[i][col - 1]) {
+                                        grid[i][col - 1] *= 2;
+                                        score += grid[i][col - 1];
+                                        grid[i][col] = 0;
+                                        merged[i][col - 1] = true;
+                                        moved = true;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                        
+                    case 'right':
+                        for (let i = 0; i < gridSize; i++) {
+                            for (let j = gridSize - 2; j >= 0; j--) {
+                                if (grid[i][j] !== 0) {
+                                    let col = j;
+                                    while (col < gridSize - 1 && grid[i][col + 1] === 0) {
+                                        grid[i][col + 1] = grid[i][col];
+                                        grid[i][col] = 0;
+                                        col++;
+                                        moved = true;
+                                    }
+                                    
+                                    if (col < gridSize - 1 && grid[i][col + 1] === grid[i][col] && !merged[i][col + 1]) {
+                                        grid[i][col + 1] *= 2;
+                                        score += grid[i][col + 1];
+                                        grid[i][col] = 0;
+                                        merged[i][col + 1] = true;
+                                        moved = true;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                }
+                
+                // 如果有移动，添加新方块并重新渲染
+                if (moved) {
+                    addNewTile();
+                    renderGrid();
+                    updateScore();
+                    
+                    // 检查游戏结束
+                    if (isGameOver()) {
+                        setTimeout(() => {
+                            alert(`游戏结束！您的得分是: ${score}`);
+                        }, 500);
+                    }
+                }
+            }
+            
+            // 检查游戏是否结束
+            function isGameOver() {
+                // 检查是否有空位
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
+                        if (grid[i][j] === 0) {
+                            return false;
+                        }
+                    }
+                }
+                
+                // 检查是否有可合并的方块
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
+                        if (
+                            (i < gridSize - 1 && grid[i][j] === grid[i + 1][j]) ||
+                            (j < gridSize - 1 && grid[i][j] === grid[i][j + 1])
+                        ) {
+                            return false;
+                        }
+                    }
+                }
+                
+                return true;
+            }
+            
+            // 事件监听：键盘方向键
+            document.addEventListener('keydown', function(e) {
+                if (document.getElementById('game-1024').classList.contains('hidden')) {
+                    return;
+                }
+                
+                switch(e.key) {
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        move('up');
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        move('down');
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        move('left');
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        move('right');
+                        break;
+                }
+            });
+            
+            // 响应式调整
+            window.addEventListener('resize', setGridSize);
+            
+            // 重新开始按钮
+            document.getElementById('restart-1024').addEventListener('click', initializeGrid);
+            
+            // 初始化游戏
+            initializeGrid();
+        }
+        
+        // 初始化五子棋 - 调整大小
+        function initGomoku() {
+            const boardSize = 15;
+            let board = Array(boardSize).fill().map(() => Array(boardSize).fill(0)); // 0:空, 1:黑, 2:白
+            let currentPlayer = 1; // 1:黑, 2:白
+            const boardElement = document.getElementById('gomoku-board');
+            
+            // 根据屏幕大小设置合适的棋盘尺寸
+            function setBoardSize() {
+                const containerWidth = boardElement.parentElement.clientWidth;
+                const cellSize = Math.floor((containerWidth - 28) / boardSize); // 减去间距
+                boardElement.style.maxWidth = `${cellSize * boardSize + 28}px`;
+                boardElement.style.margin = '0 auto';
+            }
+            
+            // 初始化棋盘
+            function initializeBoard() {
+                board = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
+                currentPlayer = 1;
+                renderBoard();
+                updateCurrentPlayer();
+                setBoardSize(); // 设置棋盘大小
+            }
+            
+            // 渲染棋盘
+            function renderBoard() {
+                boardElement.innerHTML = '';
+                
+                for (let i = 0; i < boardSize; i++) {
+                    for (let j = 0; j < boardSize; j++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'board-cell';
+                        cell.setAttribute('data-row', i);
+                        cell.setAttribute('data-col', j);
+                        
+                        // 添加棋子
+                        if (board[i][j] === 1) {
+                            cell.innerHTML = '<div class="stone black"></div>';
+                        } else if (board[i][j] === 2) {
+                            cell.innerHTML = '<div class="stone white"></div>';
+                        }
+                        
+                        // 添加点击事件
+                        cell.addEventListener('click', placeStone);
+                        
+                        boardElement.appendChild(cell);
+                    }
+                }
+            }
+            
+            // 更新当前玩家显示
+            function updateCurrentPlayer() {
+                document.getElementById('current-player').textContent = currentPlayer === 1 ? '黑方' : '白方';
+            }
+            
+            // 落子
+            function placeStone(e) {
+                const row = parseInt(e.currentTarget.getAttribute('data-row'));
+                const col = parseInt(e.currentTarget.getAttribute('data-col'));
+                
+                // 检查是否可以落子
+                if (board[row][col] !== 0) {
+                    return;
+                }
+                
+                // 落子
+                board[row][col] = currentPlayer;
+                renderBoard();
+                
+                // 检查是否获胜
+                if (checkWin(row, col)) {
+                    setTimeout(() => {
+                        alert(`${currentPlayer === 1 ? '黑方' : '白方'}获胜！`);
+                        initializeBoard();
+                    }, 100);
+                    return;
+                }
+                
+                // 切换玩家
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
+                updateCurrentPlayer();
+            }
+            
+            // 检查是否获胜
+            function checkWin(row, col) {
+                const player = board[row][col];
+                const directions = [
+                    [0, 1],   // 水平
+                    [1, 0],   // 垂直
+                    [1, 1],   // 对角线
+                    [1, -1]   // 反对角线
+                ];
+                
+                for (const [dx, dy] of directions) {
+                    let count = 1; // 当前位置已有一个棋子
+                    
+                    // 正向检查
+                    for (let i = 1; i <= 4; i++) {
+                        const newRow = row + i * dx;
+                        const newCol = col + i * dy;
+                        
+                        if (
+                            newRow >= 0 && newRow < boardSize &&
+                            newCol >= 0 && newCol < boardSize &&
+                            board[newRow][newCol] === player
+                        ) {
+                            count++;
+                        } else {
+                            break;
+                        }
+                    }
+                    
+                    // 反向检查
+                    for (let i = 1; i <= 4; i++) {
+                        const newRow = row - i * dx;
+                        const newCol = col - i * dy;
+                        
+                        if (
+                            newRow >= 0 && newRow < boardSize &&
+                            newCol >= 0 && newCol < boardSize &&
+                            board[newRow][newCol] === player
+                        ) {
+                            count++;
+                        } else {
+                            break;
+                        }
+                    }
+                    
+                    // 五子连珠
+                    if (count >= 5) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            }
+            
+            // 响应式调整
+            window.addEventListener('resize', setBoardSize);
+            
+            // 重新开始按钮
+            document.getElementById('restart-gomoku').addEventListener('click', initializeBoard);
+            
+            // 初始化棋盘
+            initializeBoard();
+        }
+        
+        // 初始化备忘录 - 修复了图片插入问题
+        function initNotes() {
+            // 新建备忘录
+            document.getElementById('create-note-btn').addEventListener('click', function() {
+                currentNoteId = null;
+                document.getElementById('note-title').value = '';
+                document.getElementById('note-content').innerHTML = '在此输入备忘录内容...';
+                document.getElementById('notes-list').classList.add('hidden');
+                document.getElementById('note-editor').classList.remove('hidden');
+                document.getElementById('note-title').focus();
+            });
+            
+            // 关闭备忘录编辑
+            document.getElementById('close-note-btn').addEventListener('click', function() {
+                document.getElementById('note-editor').classList.add('hidden');
+                document.getElementById('notes-list').classList.remove('hidden');
+            });
+            
+            // 删除备忘录
+            document.getElementById('delete-note-btn').addEventListener('click', function() {
+                if (currentNoteId && confirm('确定要删除这篇备忘录吗？')) {
+                    notes = notes.filter(note => note.id !== currentNoteId);
+                    renderNotes();
+                    document.getElementById('note-editor').classList.add('hidden');
+                    document.getElementById('notes-list').classList.remove('hidden');
+                    updateTodayStats();
+                    saveToLocalStorage();
+                }
+            });
+            
+            // 保存备忘录
+            document.getElementById('save-note-btn').addEventListener('click', saveNote);
+            
+            // 编辑器格式化工具
+            document.getElementById('format-bold').addEventListener('click', function() {
+                document.execCommand('bold', false, null);
+                document.getElementById('note-content').focus();
+            });
+            
+            document.getElementById('format-italic').addEventListener('click', function() {
+                document.execCommand('italic', false, null);
+                document.getElementById('note-content').focus();
+            });
+            
+            document.getElementById('format-underline').addEventListener('click', function() {
+                document.execCommand('underline', false, null);
+                document.getElementById('note-content').focus();
+            });
+            
+            document.getElementById('format-heading').addEventListener('click', function() {
+                document.execCommand('formatBlock', false, '<h3>');
+                document.getElementById('note-content').focus();
+            });
+            
+            document.getElementById('format-list-ul').addEventListener('click', function() {
+                document.execCommand('insertUnorderedList', false, null);
+                document.getElementById('note-content').focus();
+            });
+            
+            document.getElementById('format-list-ol').addEventListener('click', function() {
+                document.execCommand('insertOrderedList', false, null);
+                document.getElementById('note-content').focus();
+            });
+            
+            document.getElementById('format-link').addEventListener('click', function() {
+                const url = prompt('请输入链接地址:');
+                if (url) {
+                    document.execCommand('createLink', false, url);
+                }
+                document.getElementById('note-content').focus();
+            });
+            
+            // 插入图片 - 修复了图片插入功能
+            document.getElementById('insert-image').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(event) {
+                        // 创建图片元素
+                        const img = document.createElement('img');
+                        img.src = event.target.result;
+                        img.className = 'max-w-full h-auto my-2'; // 确保图片适应容器
+                        
+                        // 在光标位置插入图片
+                        const selection = window.getSelection();
+                        if (selection.rangeCount) {
+                            const range = selection.getRangeAt(0);
+                            range.deleteContents();
+                            range.insertNode(img);
+                            
+                            // 移动光标到图片后面
+                            range.setStartAfter(img);
+                            range.setEndAfter(img);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                        } else {
+                            // 如果没有选中区域，直接添加到内容末尾
+                            document.getElementById('note-content').appendChild(img);
+                        }
+                    };
+                    
+                    reader.readAsDataURL(file);
+                }
+                
+                // 重置文件输入，允许重复选择同一文件
+                this.value = '';
+                document.getElementById('note-content').focus();
+            });
+            
+            // 快捷键支持
+            document.addEventListener('keydown', function(e) {
+                // Ctrl+S 保存
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    if (!document.getElementById('note-editor').classList.contains('hidden')) {
+                        saveNote();
+                    }
+                }
+                // Ctrl+B 粗体
+                else if (e.ctrlKey && e.key === 'b') {
+                    e.preventDefault();
+                    document.execCommand('bold', false, null);
+                }
+                // Ctrl+I 斜体
+                else if (e.ctrlKey && e.key === 'i') {
+                    e.preventDefault();
+                    document.execCommand('italic', false, null);
+                }
+                // Ctrl+U 下划线
+                else if (e.ctrlKey && e.key === 'u') {
+                    e.preventDefault();
+                    document.execCommand('underline', false, null);
+                }
+            });
+            
+            // 渲染备忘录列表
+            renderNotes();
+        }
+        
+        // 保存备忘录
+        function saveNote() {
+            const title = document.getElementById('note-title').value.trim();
+            const content = document.getElementById('note-content').innerHTML.trim();
+            
+            if (!title) {
+                alert('请输入备忘录标题');
+                document.getElementById('note-title').focus();
+                return;
+            }
+            
+            const now = new Date();
+            const timeString = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            if (currentNoteId) {
+                // 更新现有备忘录
+                const index = notes.findIndex(note => note.id === currentNoteId);
+                if (index !== -1) {
+                    notes[index].title = title;
+                    notes[index].content = content;
+                    notes[index].last_edited = timeString;
+                }
+            } else {
+                // 创建新备忘录
+                const newNote = {
+                    id: Date.now(),
+                    title: title,
+                    content: content,
+                    last_edited: timeString
+                };
+                notes.unshift(newNote);
+                currentNoteId = newNote.id;
+            }
+            
+            // 重新渲染列表并更新统计
+            renderNotes();
+            updateTodayStats();
+            
+            // 显示保存成功提示
+            const saveButton = document.getElementById('save-note-btn');
+            const originalText = saveButton.innerHTML;
+            saveButton.innerHTML = '<i class="fa fa-check mr-1"></i> 已保存';
+            
+            setTimeout(() => {
+                saveButton.innerHTML = originalText;
+            }, 2000);
+            
+            // 保存到本地存储
+            saveToLocalStorage();
+        }
+        
+        // 渲染备忘录列表
+        function renderNotes() {
+            const container = document.getElementById('notes-list');
+            container.innerHTML = '';
+            
+            if (notes.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full text-center py-10">
+                        <i class="fa fa-sticky-note text-4xl text-gray-300 mb-4"></i>
+                        <p class="text-gray-500">暂无备忘录</p>
+                        <button id="create-first-note" class="mt-3 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition">
+                            创建第一条备忘录
+                        </button>
+                    </div>
+                `;
+                
+                // 绑定创建第一条备忘录事件
+                document.getElementById('create-first-note').addEventListener('click', function() {
+                    document.getElementById('create-note-btn').click();
+                });
+                
+                return;
+            }
+            
+            notes.forEach(note => {
+                // 提取纯文本内容用于预览
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = note.content;
+                const plainText = tempDiv.textContent || '';
+                
+                const noteElement = document.createElement('div');
+                noteElement.className = 'note-card bg-white border border-gray-200 rounded-lg overflow-hidden card-shadow cursor-pointer';
+                noteElement.setAttribute('data-id', note.id);
+                noteElement.innerHTML = `
+                    <div class="p-4">
+                        <h3 class="font-bold text-lg mb-2 truncate">${note.title}</h3>
+                        <p class="text-gray-600 text-sm line-clamp-3 mb-3">${plainText}</p>
+                        <p class="text-xs text-gray-400">最后编辑：${note.last_edited}</p>
+                    </div>
+                `;
+                
+                // 点击打开备忘录
+                noteElement.addEventListener('click', function() {
+                    const noteId = parseInt(this.getAttribute('data-id'));
+                    const note = notes.find(n => n.id === noteId);
+                    
+                    if (note) {
+                        currentNoteId = noteId;
+                        document.getElementById('note-title').value = note.title;
+                        document.getElementById('note-content').innerHTML = note.content;
+                        document.getElementById('notes-list').classList.add('hidden');
+                        document.getElementById('note-editor').classList.remove('hidden');
+                    }
+                });
+                
+                container.appendChild(noteElement);
+            });
+        }
+        
+        // 初始化对话界面 - 接入Qwen API
+        function initChat() {
+            // 保存API密钥
+            document.getElementById('save-api-key').addEventListener('click', function() {
+                const apiKey = document.getElementById('qwen-api-key').value;
+                if (apiKey) {
+                    localStorage.setItem('qwenApiKey', apiKey);
+                    alert('API密钥已保存');
+                } else {
+                    alert('请输入有效的API密钥');
+                }
+            });
+            
+            // 加载已保存的API密钥
+            const savedApiKey = localStorage.getItem('qwenApiKey');
+            if (savedApiKey) {
+                document.getElementById('qwen-api-key').value = savedApiKey;
+            }
+            
+            // 提交对话 - 接入Qwen API
+            document.getElementById('chat-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const input = document.getElementById('chat-input');
+                const message = input.value.trim();
+                
+                if (message) {
+                    // 添加用户消息
+                    addChatMessage(message, 'user');
+                    
+                    // 清空输入
+                    input.value = '';
+                    
+                    // 显示加载状态
+                    document.getElementById('chat-status').classList.remove('hidden');
+                    
+                    // 获取API密钥
+                    const apiKey = localStorage.getItem('qwenApiKey');
+                    if (!apiKey) {
+                        setTimeout(() => {
+                            addChatMessage('请先设置并保存Qwen API密钥', 'ai');
+                            document.getElementById('chat-status').classList.add('hidden');
+                        }, 500);
+                        return;
+                    }
+                    
+                    // 调用Qwen API
+                    callQwenApi(message, apiKey)
+                        .then(response => {
+                            addChatMessage(response, 'ai');
+                        })
+                        .catch(error => {
+                            addChatMessage(`调用API失败: ${error.message}`, 'ai');
+                        })
+                        .finally(() => {
+                            document.getElementById('chat-status').classList.add('hidden');
+                        });
+                }
+            });
+        }
+        
+        // 调用Qwen API
+        function callQwenApi(message, apiKey) {
+            return new Promise((resolve, reject) => {
+                // 实际的API调用代码
+                // 注意：这里使用了模拟数据，实际应用中需要替换为真实的API调用
+                
+                // 模拟网络延迟
+                setTimeout(() => {
+                    // 模拟成功响应
+                    resolve(`这是Qwen对您问题"${message}"的回答。在实际应用中，这里将显示真实的API返回结果。`);
+                    
+                    // 如果需要模拟错误，可以使用下面的代码
+                    // reject(new Error('网络连接错误，请稍后重试'));
+                }, 1500);
+                
+                /* 真实API调用代码示例
+                fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'qwen-plus', // 可以根据需要更换为其他模型
+                        messages: [
+                            { role: 'user', content: message }
+                        ]
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP错误，状态码: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.choices && data.choices.length > 0) {
+                        resolve(data.choices[0].message.content);
+                    } else {
+                        throw new Error('未获取到有效响应');
+                    }
+                })
+                .catch(error => {
+                    reject(error);
+                });
+                */
+            });
+        }
+        
+        // 添加聊天消息
+        function addChatMessage(content, sender) {
+            const messagesContainer = document.getElementById('chat-messages');
+            
+            const messageElement = document.createElement('div');
+            messageElement.className = `flex items-start gap-3 ${sender === 'user' ? 'justify-end' : ''}`;
+            
+            if (sender === 'user') {
+                messageElement.innerHTML = `
+                    <div class="bg-primary text-white rounded-lg rounded-tr-none p-3 max-w-[80%]">
+                        ${content}
+                    </div>
+                    <div class="bg-gray-200 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fa fa-user text-gray-600"></i>
+                    </div>
+                `;
+            } else {
+                messageElement.innerHTML = `
+                    <div class="bg-gray-200 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fa fa-robot text-gray-600"></i>
+                    </div>
+                    <div class="bg-gray-100 rounded-lg rounded-tl-none p-3 max-w-[80%]">
+                        ${content}
+                    </div>
+                `;
+            }
+            
+            messagesContainer.appendChild(messageElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        // 更新今日统计
+        function updateTodayStats() {
+            const today = new Date().toISOString().split('T')[0];
+            const todayRecords = workRecords.filter(record => record.date === today);
+            
+            // 计算今日工作时间
+            let totalWorkHours = 0;
+            todayRecords.forEach(record => {
+                totalWorkHours += record.hours;
+            });
+            
+            const workHours = Math.floor(totalWorkHours);
+            const workMinutes = Math.round((totalWorkHours - workHours) * 60);
+            
+            document.getElementById('today-worked').textContent = 
+                `${workHours}小时${workMinutes}分钟`;
+                
+            // 计算今日阅读文档数
+            document.getElementById('today-read').textContent = "0篇";
+            
+            // 计算今日创建的备忘录数
+            const todayNotes = notes.filter(note => note.last_edited.startsWith(today));
+            document.getElementById('today-notes').textContent = `${todayNotes.length}篇`;
+        }
+        
+        // 保存数据到本地存储
+        function saveToLocalStorage() {
+            const data = {
+                remainingTime: remainingTime,
+                isTimerRunning: isTimerRunning,
+                workRecords: workRecords,
+                pdfBooks: pdfBooks,
+                notes: notes
+            };
+            
+            localStorage.setItem('workspaceData', JSON.stringify(data));
+        }
+        
+        // 从本地存储加载数据
+        function loadFromLocalStorage() {
+            const data = localStorage.getItem('workspaceData');
+            if (data) {
+                try {
+                    const parsedData = JSON.parse(data);
+                    
+                    remainingTime = parsedData.remainingTime || 7 * 60 * 60;
+                    isTimerRunning = parsedData.isTimerRunning || false;
+                    workRecords = parsedData.workRecords || [];
+                    pdfBooks = parsedData.pdfBooks || pdfBooks;
+                    notes = parsedData.notes || notes;
+                    
+                    // 更新显示
+                    updateTimerDisplay();
+                    updateEndTime();
+                    renderWorkRecords();
+                    renderBooks();
+                    renderNotes();
+                    updateTodayStats();
+                    
+                    // 如果计时器正在运行，继续计时
+                    if (isTimerRunning) {
+                        startTimer();
+                    }
+                } catch (error) {
+                    console.error('加载本地存储数据失败:', error);
+                    // 可以选择重置数据或忽略错误
+                }
+            }
+            
+            // 加载音乐URL
+            const bilibiliUrl = localStorage.getItem('bilibiliMusicUrl');
+            if (bilibiliUrl) {
+                document.getElementById('bilibili-url').value = bilibiliUrl;
+                document.getElementById('music-iframe').src = bilibiliUrl;
+            }
+        }
+    </script>
+</body>
+</html>
