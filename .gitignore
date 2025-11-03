@@ -1,0 +1,87 @@
+# 通用忽略规则
+# 操作系统生成的文件
+.DS_Store               # macOS
+Thumbs.db               # Windows
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# 编辑器/IDE 配置文件
+.idea/                  # IntelliJ 系列
+.vscode/                # VS Code
+*.suo                   # Visual Studio
+*.ntvs*
+*.njsproj
+*.sln
+*.swp                   # Vim
+*.swo
+*.log
+*.DS_Store
+.obsidian/              # Obsidian
+
+# 依赖包和缓存
+node_modules/           # Node.js
+vendor/                 # Composer (PHP)
+__pycache__/            # Python
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 编译输出
+dist/                   # 前端构建产物
+build/                  # 编译输出
+out/
+target/                 # Java
+*.o
+*.lo
+*.la
+*.obj
+*.lib
+*.exe
+*.dll
+*.so
+*.dylib
+
+# 环境变量和敏感信息
+.env                    # 环境变量文件
+.env.local
+.env.*.local
+*.pem                   # 证书文件
+*.key
+*.log
+
+# 测试相关
+coverage/               # 测试覆盖率报告
+*.cover
+.pytest_cache/
+.venv/                  # Python 虚拟环境
+venv/
+
+# 其他临时文件
+tmp/
+temp/
+*.tmp
+*.bak
+*.old
+.env
+instance/
+uploads/
