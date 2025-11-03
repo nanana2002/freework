@@ -8,6 +8,8 @@
  * Restarting with stat
  * Debugger is active!
  * Debugger PIN: 458-095-237
-127.0.0.1 - - [03/Nov/2025 17:15:51] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [03/Nov/2025 17:15:51] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
-127.0.0.1 - - [03/Nov/2025 17:15:57] "GET /api/get-pdfs HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 17:58:28] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 17:58:30] "GET /api/get-pdfs HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 17:58:33] "GET /api/get-pdf/1 HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 17:59:53] "POST /api/upload-pdf HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 17:59:54] "GET /api/get-pdf/2 HTTP/1.1" 200 -

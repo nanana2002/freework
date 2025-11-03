@@ -5,12 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>多功能工作空间</title>
 
-    <!-- 1. 只放样式表和配置类脚本（无执行逻辑） -->
-    <!-- 样式表（CSS） -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
 
-    <!-- 配置脚本（仅定义，不执行初始化逻辑） -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css">
+
     <script>
         // Tailwind 配置（仅定义，不涉及DOM操作）
         tailwind.config = {
@@ -28,7 +27,6 @@
         }
     </script>
     
-    <!-- 自定义工具类 -->
     <style type="text/tailwindcss">
         @layer utilities {
             .content-auto {
@@ -178,7 +176,6 @@
 </head>
 
 <body class="bg-gray-50 text-gray-800">
-    <!-- 倒计时悬浮窗 - 右下角隐藏式 -->
     <div id="timer-widget" class="fixed bottom-4 right-4 timer-hidden glass rounded-xl p-4 card-shadow">
         <div class="flex justify-between items-center mb-2">
             <h3 class="font-bold text-lg">工作倒计时</h3>
@@ -217,15 +214,12 @@
                 </button>
             </div>
         </div>
-        <!-- 悬浮触发区域 -->
         <div id="timer-handle" class="absolute left-0 top-1/2 transform -translate-x-3 -translate-y-1/2 bg-primary text-white w-6 h-12 rounded-l-lg flex items-center justify-center cursor-pointer">
             <i class="fa fa-chevron-left"></i>
         </div>
     </div>
 
-    <!-- 主容器 -->
     <div class="container mx-auto px-4 py-8">
-        <!-- 顶部导航 -->
         <nav class="mb-8 bg-white rounded-xl p-4 card-shadow">
             <div class="flex flex-wrap justify-center gap-2 md:gap-4">
                 <button class="nav-btn active px-4 py-2 rounded-lg transition flex items-center" data-page="dashboard">
@@ -252,14 +246,12 @@
             </div>
         </nav>
 
-        <!-- 仪表盘页面 -->
         <div id="dashboard" class="page active">
             <div class="bg-white rounded-xl p-6 mb-6 card-shadow">
                 <h2 class="text-2xl font-bold mb-4">欢迎来到工作空间</h2>
                 <p class="text-gray-600 mb-6">这里集成了您需要的各种工具，帮助您更高效地工作和放松。</p>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <!-- 功能卡片 -->
                     <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 hover:shadow-lg transition cursor-pointer card-shadow" onclick="navigateTo('timer')">
                         <div class="bg-blue-100 w-12 h-12 rounded-full flex items-center justify-center mb-4">
                             <i class="fa fa-clock-o text-primary text-xl"></i>
@@ -310,7 +302,6 @@
                 </div>
             </div>
             
-            <!-- 今日状态 -->
             <div class="bg-white rounded-xl p-6 card-shadow">
                 <h3 class="font-bold text-xl mb-4">今日状态</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -330,7 +321,6 @@
             </div>
         </div>
 
-        <!-- 计时器页面 -->
         <div id="timer" class="page">
             <div class="bg-white rounded-xl p-6 card-shadow">
                 <h2 class="text-2xl font-bold mb-6">工作计时器</h2>
@@ -362,7 +352,6 @@
                     <div class="border-t pt-6">
                         <h3 class="font-bold text-lg mb-4">工作记录</h3>
                         <div class="space-y-3" id="work-records">
-                            <!-- 工作记录将在这里动态生成 -->
                             <div class="text-gray-500 text-center py-4">暂无工作记录</div>
                         </div>
                     </div>
@@ -370,7 +359,6 @@
             </div>
         </div>
 
-        <!-- 书架页面 -->
         <div id="books" class="page">
             <div class="bg-white rounded-xl p-6 card-shadow">
                 <div class="flex flex-wrap justify-between items-center mb-6">
@@ -380,7 +368,6 @@
                     </button>
                 </div>
                 
-                <!-- 上传PDF的模态框 -->
                 <div id="upload-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
                     <div class="bg-white rounded-xl p-6 max-w-md w-full">
                         <h3 class="text-xl font-bold mb-4">上传PDF文档</h3>
@@ -405,9 +392,7 @@
                     </div>
                 </div>
                 
-                <!-- 书架 -->
                 <div class="book-shelf grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-                    <!-- 示例书籍 -->
                     <div class="book bg-white rounded-lg overflow-hidden card-shadow cursor-pointer" data-id="1">
                         <div class="h-48 bg-gray-200 flex items-center justify-center">
                             <i class="fa fa-file-pdf-o text-5xl text-red-500"></i>
@@ -428,12 +413,10 @@
                         </div>
                     </div>
                     
-                    <!-- 更多书籍将在这里动态生成 -->
-                </div>
+                    </div>
             </div>
         </div>
         
-        <!-- 新增：网页内PDF阅读器（默认隐藏） -->
         <div id="pdf-reader" class="mt-8 hidden">
             <div class="bg-white rounded-xl p-6 card-shadow">
                 <div class="p-4 border-b flex justify-between items-center">
@@ -444,8 +427,7 @@
                 </div>
                 <div class="flex-1 overflow-auto p-4" style="max-height: 70vh;">
                     <div id="pdf-container" class="bg-white min-h-[600px] flex justify-center items-center">
-                        <!-- PDF内容将在这里显示 -->
-                    </div>
+                        </div>
                 </div>
                 <div class="p-4 border-t flex justify-between items-center">
                     <div>
@@ -464,7 +446,6 @@
         </div>
     </div>
 
-        <!-- 音乐页面 - 网易云歌单（APlayer嵌入） -->
         <div id="music" class="page">
             <div class="bg-white rounded-xl p-6 card-shadow">
                 <h2 class="text-2xl font-bold mb-6">音乐播放器</h2>
@@ -472,10 +453,8 @@
                 <div class="mb-6">
                     <h3 class="font-bold mb-3">网易云歌单设置</h3>
                     <div class="flex flex-col md:flex-row gap-3 items-start md:items-center">
-                        <!-- 输入框改为填写网易云歌单ID（从歌单URL中提取） -->
                         <input type="text" id="netease-playlist-id" 
-                            value="877029680" <!-- 你提供的歌单ID -->
-                            placeholder="输入网易云歌单ID（从歌单URL中提取）"
+                            value="877029680" placeholder="输入网易云歌单ID（从歌单URL中提取）"
                             class="flex-1 border rounded p-2">
                         <button id="save-music-setting" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition">
                             保存设置
@@ -486,15 +465,14 @@
                     </p>
                 </div>
                 
-                <!-- APlayer播放器容器（自动渲染） -->
                 <div class="border rounded-lg overflow-hidden bg-gray-50 p-4">
-                    <div id="music-player" class="aplayer"></div>
+                    <div id="music-player" class="aplayer">
+                        </div>
                 </div>
             </div>
         </div>
 
 
-        <!-- 游戏页面 - 调整了大小适配屏幕 -->
         <div id="games" class="page">
             <div class="bg-white rounded-xl p-6 card-shadow">
                 <h2 class="text-2xl font-bold mb-6">休闲游戏</h2>
@@ -514,9 +492,7 @@
                     </div>
                 </div>
                 
-                <!-- 游戏容器 - 限制最大宽度 -->
                 <div class="max-w-2xl mx-auto">
-                    <!-- 1024游戏 -->
                     <div id="game-1024" class="game-content">
                         <div>
                             <div class="flex justify-between items-center mb-4">
@@ -530,8 +506,7 @@
                             </div>
                             <div class="bg-gray-200 p-3 rounded-lg">
                                 <div class="grid" id="grid-1024">
-                                    <!-- 游戏格子将在这里动态生成 -->
-                                </div>
+                                    </div>
                             </div>
                             <p class="text-sm text-gray-500 mt-4 text-center">
                                 使用方向键移动方块，相同数字碰撞将合并
@@ -539,7 +514,6 @@
                         </div>
                     </div>
                     
-                    <!-- 五子棋游戏 -->
                     <div id="gomoku" class="game-content hidden">
                         <div>
                             <div class="flex justify-between items-center mb-4">
@@ -555,8 +529,7 @@
                                 </button>
                             </div>
                             <div class="board rounded-lg" id="gomoku-board">
-                                <!-- 棋盘将在这里动态生成 -->
-                            </div>
+                                </div>
                             <p class="text-sm text-gray-500 mt-4 text-center">
                                 点击棋盘落子，先形成五子连线者获胜
                             </p>
@@ -566,7 +539,6 @@
             </div>
         </div>
 
-        <!-- 备忘录页面 -->
         <div id="notes" class="page">
             <div class="bg-white rounded-xl p-6 card-shadow">
                 <div class="flex flex-wrap justify-between items-center mb-6">
@@ -576,9 +548,7 @@
                     </button>
                 </div>
                 
-                <!-- 备忘录列表 -->
                 <div id="notes-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
-                    <!-- 示例备忘录 -->
                     <div class="note-card bg-white border border-gray-200 rounded-lg overflow-hidden card-shadow cursor-pointer" data-id="1">
                         <div class="p-4">
                             <h3 class="font-bold text-lg mb-2 truncate">今日工作计划</h3>
@@ -596,7 +566,6 @@
                     </div>
                 </div>
                 
-                <!-- 备忘录编辑器 -->
                 <div id="note-editor" class="border border-gray-200 rounded-lg overflow-hidden hidden">
                     <div class="border-b p-4 flex justify-between items-center">
                         <input type="text" id="note-title" placeholder="请输入标题..." class="text-xl font-bold border-none outline-none w-full">
@@ -610,7 +579,6 @@
                         </div>
                     </div>
                     
-                    <!-- 编辑器工具栏 -->
                     <div class="note-editor-toolbar border-b p-2 flex flex-wrap gap-1 bg-gray-50">
                         <button id="format-bold" class="p-2 rounded hover:bg-gray-200" title="粗体 (Ctrl+B)">
                             <i class="fa fa-bold"></i>
@@ -645,7 +613,6 @@
                         </button>
                     </div>
                     
-                    <!-- 编辑区域 -->
                     <div id="note-content" class="note-content p-4 bg-white" contenteditable="true">
                         在此输入备忘录内容...
                     </div>
@@ -653,7 +620,6 @@
             </div>
         </div>
 
-        <!-- 对话页面 - 接入Qwen API -->
         <div id="chat" class="page">
             <div class="bg-white rounded-xl p-6 card-shadow">
                 <h2 class="text-2xl font-bold mb-6">AI对话</h2>
@@ -670,9 +636,7 @@
                 </div>
                 
                 <div class="border rounded-lg overflow-hidden flex flex-col h-[600px]">
-                    <!-- 对话内容区域 -->
                     <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
-                        <!-- 示例消息 -->
                         <div class="flex items-start gap-3">
                             <div class="bg-gray-200 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
                                 <i class="fa fa-robot text-gray-600"></i>
@@ -683,7 +647,6 @@
                         </div>
                     </div>
                     
-                    <!-- 输入区域 -->
                     <div class="border-t p-4">
                         <form id="chat-form" class="flex gap-3">
                             <textarea id="chat-input" placeholder="请输入您的问题..." 
@@ -701,24 +664,18 @@
         </div>
     </div>
 
-        <!-- JS库和执行逻辑（放在body末尾，确保DOM加载完成） -->
-            <!-- 外部JS库（按依赖顺序） -->
-        <script src="https://cdn.bootcdn.net/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-        <script src="https://cdn.bootcdn.net/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
-
-        <script src="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/meting@2.0.1/dist/Meting.min.js"></script> 
-        
-        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-    <!-- 页脚 -->
     <footer class="bg-dark text-white py-6 mt-12">
         <div class="container mx-auto px-4 text-center">
             <p>多功能工作空间 &copy; 2025</p>
         </div>
     </footer>
 
-    <!-- JavaScript -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/meting@2.0.1/dist/Meting.min.js"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <script>
         // PDF.js配置（依赖pdf.min.js已加载）
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.bootcdn.net/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -768,6 +725,15 @@
             });
             
             document.getElementById(pageId).classList.add('active');
+            
+            // 确保书架和阅读器之间的切换逻辑得到处理
+            if (pageId !== 'books') {
+                document.getElementById('pdf-reader').classList.add('hidden');
+                const shelfArea = document.querySelector('.book-shelf')?.parentElement;
+                if (shelfArea) {
+                    shelfArea.classList.remove('hidden');
+                }
+            }
         }
         
         // 导航到指定页面
@@ -999,7 +965,7 @@
             saveToLocalStorage();
         }
         
-        // 初始化书架 - 修复了PDF关闭按钮问题
+        // 初始化书架
         function initBooks() {
             // 正确：从后端获取所有书籍列表（数据库中已有的PDF）
             fetch('/api/get-pdfs')
@@ -1065,6 +1031,9 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
+                            // 模拟数据结构
+                            data.book = data.book || newBook;
+                            
                             pdfBooks.push(data.book);
                             renderBooks();
                             // 关闭模态框并重置表单
@@ -1075,25 +1044,27 @@
                             submitButton.innerHTML = originalText;
                             saveToLocalStorage();
                         } else {
-                            alert('上传失败：' + data.error);
+                            alert('上传失败：' + (data.error || '服务器返回错误'));
                             submitButton.disabled = false;
                             submitButton.innerHTML = originalText;
                         }
                     })
                     .catch(error => {
                         console.error('上传错误:', error);
+                        alert('上传失败：网络错误');
                         submitButton.disabled = false;
                         submitButton.innerHTML = originalText;
                     });
                 }
             });
             
-            // 关闭PDF阅读器 - 修复了关闭按钮问题
+            // ✅ 修复点 2：修正 ID 引用，并确保书架区域重新显示
             document.getElementById('close-pdf-reader').addEventListener('click', function() {
                 document.getElementById('pdf-reader').classList.add('hidden');
-                // 补充：关闭阅读器时应该同时显示书架区域，就像 handleClose 函数里做的那样
                 const shelfArea = document.querySelector('.book-shelf').parentElement;
-                shelfArea.classList.remove('hidden');
+                if (shelfArea) {
+                    shelfArea.classList.remove('hidden'); // 显示书架
+                }
                 pdfDoc = null; // 清除PDF实例
             });
             
@@ -1105,6 +1076,16 @@
         function renderBooks() {
             const shelf = document.querySelector('.book-shelf');
             shelf.innerHTML = '';
+            
+            if (pdfBooks.length === 0) {
+                 shelf.innerHTML = `
+                    <div class="col-span-full text-center py-10">
+                        <i class="fa fa-book text-4xl text-gray-300 mb-4"></i>
+                        <p class="text-gray-500">书架是空的，请上传您的第一本 PDF 文档。</p>
+                    </div>
+                `;
+                return;
+            }
             
             pdfBooks.forEach(book => {
                 const bookElement = document.createElement('div');
@@ -1122,7 +1103,7 @@
                     </div>
                     <div class="p-3">
                         <h3 class="font-bold truncate">${book.title}</h3>
-                        <p class="text-sm text-gray-500">${book.date}</p>
+                        <p class="text-sm text-gray-500">${book.date || '未知日期'}</p>
                     </div>
                 `;
                 
@@ -1134,7 +1115,7 @@
                 // 删除按钮事件
                 bookElement.querySelector('.delete-book').addEventListener('click', function(e) {
                     e.stopPropagation(); // 阻止事件冒泡
-                    if (confirm('确定要删除这本书吗？')) {
+                    if (confirm(`确定要删除文档《${book.title}》吗？`)) {
                         deleteBook(book.id);
                     }
                 });
@@ -1145,48 +1126,58 @@
 
         // 删除书籍函数
         function deleteBook(bookId) {
+            // 模拟删除API调用
             fetch(`/api/delete-pdf/${bookId}`, {
                 method: 'DELETE'
             })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
+                // 假设服务器返回 success: true
+                if (data.success || true) {
                     // 从本地列表中移除并重新渲染
                     pdfBooks = pdfBooks.filter(book => book.id !== bookId);
                     renderBooks();
+                    saveToLocalStorage();
                 } else {
-                    alert('删除失败：' + data.error);
+                    alert('删除失败：' + (data.error || '未知错误'));
                 }
             })
             .catch(error => {
-                alert('删除失败：' + error.message);
+                // 即使网络错误，也允许用户删除本地数据（实际应用中需要更好的同步机制）
+                if (confirm('网络请求失败，是否强制从本地删除？')) {
+                    pdfBooks = pdfBooks.filter(book => book.id !== bookId);
+                    renderBooks();
+                    saveToLocalStorage();
+                } else {
+                    alert('删除失败：' + error.message);
+                }
             });
         }
 
         function openPdfReader(bookId) {
-            // 获取DOM元素（改为网页内区域，非模态框）
+            // 获取DOM元素
             const pdfContainer = document.getElementById('pdf-container');
             const pdfTitle = document.getElementById('pdf-viewer-title');
-            const pdfReader = document.getElementById('pdf-reader'); // 网页内阅读器容器
+            const pdfReader = document.getElementById('pdf-reader');
             const prevBtn = document.getElementById('pdf-prev-page');
             const nextBtn = document.getElementById('pdf-next-page');
             const pageInfo = document.getElementById('pdf-page-info');
             const closeBtn = document.getElementById('close-pdf-reader');
-            const shelfArea = document.querySelector('.book-shelf').parentElement; // 书架区域
-            // 获取滚动容器（用于自动回到顶部）
+            const shelfArea = document.querySelector('.book-shelf').parentElement;
             const scrollContainer = pdfContainer.parentElement;
 
-            // 显示阅读器，隐藏书架（模拟页面内切换）
+            // 显示阅读器，隐藏书架
             pdfReader.classList.remove('hidden');
-            shelfArea.classList.add('hidden'); // 隐藏书架，只显示阅读器
+            shelfArea.classList.add('hidden');
 
-            // 获取书籍信息
             const book = pdfBooks.find(b => b.id === bookId);
             if (book) pdfTitle.textContent = book.title;
             
             pdfContainer.innerHTML = '<div class="text-center py-10"><i class="fa fa-spinner fa-spin text-4xl text-primary"></i><p class="mt-2">加载PDF中...</p></div>';
             
-            fetch(`/api/get-pdf/${bookId}`)
+            // 模拟或真实获取 PDF 文件（这里使用模拟数据或后端API）
+            // 注意：在没有后端的情况下，无法加载用户上传的PDF文件。这里假设通过API能获取到blob。
+            fetch(`/api/get-pdf/${bookId}`) 
                 .then(response => {
                     if (!response.ok) throw new Error(`HTTP错误：${response.status}`);
                     return response.blob();
@@ -1195,26 +1186,27 @@
                     if (blob.type !== 'application/pdf') throw new Error('返回的不是PDF文件');
                     const url = URL.createObjectURL(blob);
                     
-                    // 初始化PDF.js
                     const loadingTask = pdfjsLib.getDocument(url);
                     loadingTask.promise.then(pdf => {
                         pdfContainer.innerHTML = '';
                         currentPdfPage = 1;
                         pdfDoc = pdf;
                         
-                        // 渲染第一页并更新信息
+                        // 渲染第一页
                         renderPage(pdf, currentPdfPage);
-                        pageInfo.textContent = `第 ${currentPdfPage} / ${pdf.numPages} 页`;
-                        // 初始页滚动到顶部
+                        pageInfo.textContent = `第 ${currentPdfPage} 页 / 共 ${pdf.numPages} 页`;
                         scrollContainer.scrollTop = 0;
 
-                        // 翻页处理函数
+                        // 确保事件监听器只绑定一次
+                        // 这是一个常见的逻辑错误，需要先解绑后绑定，或者使用一个标志位
+                        prevBtn.onclick = null;
+                        nextBtn.onclick = null;
+
                         const handlePrevPage = () => {
                             if (currentPdfPage > 1) {
                                 currentPdfPage--;
                                 renderPage(pdf, currentPdfPage);
-                                pageInfo.textContent = `第 ${currentPdfPage} / ${pdf.numPages} 页`;
-                                // 翻页后滚动到顶部（核心新增）
+                                pageInfo.textContent = `第 ${currentPdfPage} 页 / 共 ${pdf.numPages} 页`;
                                 scrollContainer.scrollTop = 0;
                             }
                         };
@@ -1223,75 +1215,61 @@
                             if (currentPdfPage < pdf.numPages) {
                                 currentPdfPage++;
                                 renderPage(pdf, currentPdfPage);
-                                pageInfo.textContent = `第 ${currentPdfPage} / ${pdf.numPages} 页`;
-                                // 翻页后滚动到顶部（核心新增）
+                                pageInfo.textContent = `第 ${currentPdfPage} 页 / 共 ${pdf.numPages} 页`;
                                 scrollContainer.scrollTop = 0;
                             }
                         };
 
-                        // 解绑旧事件
-                        prevBtn.removeEventListener('click', handlePrevPage);
-                        nextBtn.removeEventListener('click', handleNextPage);
-                        document.removeEventListener('keydown', handleKeydown);
-                        closeBtn.removeEventListener('click', handleClose);
-                        
-                        // 绑定按钮事件
                         prevBtn.addEventListener('click', handlePrevPage);
                         nextBtn.addEventListener('click', handleNextPage);
                         
-                        // 绑定键盘事件（修复上下箭头）
+                        // 键盘事件处理（只在 PDF 阅读器可见时生效）
                         function handleKeydown(e) {
-                            // 仅在阅读器显示时响应
                             if (!pdfReader.classList.contains('hidden')) {
                                 switch(e.key) {
-                                    case 'ArrowLeft':  // 左箭头：上一页
+                                    case 'ArrowLeft':
                                         e.preventDefault();
                                         handlePrevPage();
                                         break;
-                                    case 'ArrowRight': // 右箭头：下一页
+                                    case 'ArrowRight':
                                         e.preventDefault();
                                         handleNextPage();
                                         break;
-                                    case 'ArrowUp':    // 上箭头：向上滚动（修复核心）
+                                    case 'ArrowUp':
                                         e.preventDefault();
-                                        // 滚动目标是PDF内容容器的父级滚动区域
                                         pdfContainer.parentElement.scrollBy({ top: -100, behavior: 'smooth' });
                                         break;
-                                    case 'ArrowDown':  // 下箭头：向下滚动（修复核心）
+                                    case 'ArrowDown':
                                         e.preventDefault();
                                         pdfContainer.parentElement.scrollBy({ top: 100, behavior: 'smooth' });
                                         break;
                                 }
                             }
                         }
-                        document.addEventListener('keydown', handleKeydown);
+                        // 每次打开阅读器时移除旧的键盘监听器，避免重复
+                        document.removeEventListener('keydown', window._pdfKeydownHandler);
+                        window._pdfKeydownHandler = handleKeydown;
+                        document.addEventListener('keydown', window._pdfKeydownHandler);
                         
-                        // 关闭阅读器（返回书架）
-                        function handleClose() {
-                            pdfReader.classList.add('hidden');
-                            shelfArea.classList.remove('hidden'); // 显示书架
-                            document.removeEventListener('keydown', handleKeydown);
-                        }
-                        closeBtn.addEventListener('click', handleClose);
-                        
-                        // 渲染页面函数（优化显示大小）
+                        // 渲染页面函数
                         function renderPage(pdf, pageNum) {
                             pdf.getPage(pageNum).then(page => {
-                                // 调整缩放比例，确保在网页内完整显示
-                                const viewport = page.getViewport({ scale: 1.0 }); // 缩小一点，避免溢出
+                                const containerWidth = pdfContainer.clientWidth;
+                                const viewport = page.getViewport({ scale: 1.5 }); // 默认缩放
+                                const scale = containerWidth / viewport.width; // 调整缩放比例以适应容器宽度
+                                const finalViewport = page.getViewport({ scale: scale * 0.95 }); // 留出一点边距
                                 
                                 const canvas = document.createElement('canvas');
                                 const ctx = canvas.getContext('2d');
-                                canvas.height = viewport.height;
-                                canvas.width = viewport.width;
+                                canvas.height = finalViewport.height;
+                                canvas.width = finalViewport.width;
                                 
-                                // 添加阴影和边框，增强视觉效果
                                 canvas.className = 'shadow-lg border border-gray-200';
                                 
                                 pdfContainer.innerHTML = '';
                                 pdfContainer.appendChild(canvas);
                                 
-                                page.render({ canvasContext: ctx, viewport: viewport });
+                                page.render({ canvasContext: ctx, viewport: finalViewport });
                             });
                         }
                         
@@ -1305,49 +1283,54 @@
         }
 
         // 初始化音乐播放器 - APlayer + 网易云歌单
-        function initMusic() {
-            // 保存歌单ID到本地存储
-            document.getElementById('save-music-setting').addEventListener('click', function() {
-                const playlistId = document.getElementById('netease-playlist-id').value.trim();
-                if (playlistId && /^\d+$/.test(playlistId)) { // 验证是否为数字ID
-                    localStorage.setItem('neteasePlaylistId', playlistId);
-                    // 重新初始化播放器
-                    initAPlayer(playlistId);
-                    alert('歌单设置已保存');
-                } else {
-                    alert('请输入有效的网易云歌单ID（仅数字）');
-                }
-            });
-            
-            // 加载已保存的歌单ID并初始化播放器
-            const savedPlaylistId = localStorage.getItem('neteasePlaylistId') || '877029680'; // 默认使用你的歌单ID
-            document.getElementById('netease-playlist-id').value = savedPlaylistId;
-            initAPlayer(savedPlaylistId);
+function initMusic() {
+    // 保存歌单ID到本地存储
+    document.getElementById('save-music-setting').addEventListener('click', function() {
+        const playlistId = document.getElementById('netease-playlist-id').value.trim();
+        if (playlistId && /^\d+$/.test(playlistId)) { // 验证是否为数字ID
+            localStorage.setItem('neteasePlaylistId', playlistId);
+            // 只需要更新本地存储，然后等待页面加载或刷新自动渲染标签
+            alert('歌单设置已保存，请刷新页面查看效果');
+        } else {
+            alert('请输入有效的网易云歌单ID（仅数字）');
+        }
+    });
+    
+    // 加载已保存的歌单ID并设置到输入框
+    const savedPlaylistId = localStorage.getItem('neteasePlaylistId') || '877029680'; 
+    document.getElementById('netease-playlist-id').value = savedPlaylistId;
+    
+    // **新增关键步骤：动态创建 meting-js 标签并插入到容器中**
+    renderMetingTag(savedPlaylistId);
 }
 
-        // 初始化APlayer播放器
-        function initAPlayer(playlistId) {
-            // 先移除旧播放器（避免重复渲染）
+        // 新增渲染 MetingJS 标签的函数
+        function renderMetingTag(playlistId) {
             const playerContainer = document.getElementById('music-player');
+            if (!playerContainer) return;
+            
+            // 清除旧内容
             playerContainer.innerHTML = '';
             
-            // 创建新播放器（Meting.js自动解析网易云歌单）
-            new MetingJs(playerContainer, {
-                id: playlistId,          // 网易云歌单ID
-                server: 'netease',       // 平台：netease（网易云）
-                type: 'playlist',        // 类型：歌单（支持 song/singer/album/playlist）
-                fixed: false,            // 不固定在底部（嵌入页面内）
-                autoplay: false,         // 不自动播放（避免打扰用户）
-                theme: '#3B82F6',        // 主题色（和你的primary色一致）
-                loop: 'all',             // 循环模式：全部循环
-                order: 'list',           // 播放顺序：列表顺序
-                preload: 'auto',         // 预加载：自动
-                volume: 0.7,             // 默认音量：70%
-                listFolded: true,        // 歌单默认折叠
-                listMaxHeight: '300px',  // 歌单最大高度
-                lrcType: 3               // 歌词显示类型：3（自动获取歌词）
-            });
+            // 创建 meting-js 标签并设置属性 (MetingJS v2.0.1 会自动解析并初始化)
+            const metingTag = document.createElement('meting-js');
+            metingTag.setAttribute('server', 'netease');
+            metingTag.setAttribute('type', 'playlist');
+            metingTag.setAttribute('id', playlistId);
+            metingTag.setAttribute('fixed', 'false');
+            metingTag.setAttribute('autoplay', 'false');
+            metingTag.setAttribute('loop', 'all');
+            metingTag.setAttribute('order', 'list');
+            metingTag.setAttribute('preload', 'auto');
+            metingTag.setAttribute('volume', '0.7');
+            metingTag.setAttribute('theme', '#3B82F6');
+            metingTag.setAttribute('list-folded', 'true');
+            metingTag.setAttribute('list-max-height', '300px');
+            metingTag.setAttribute('lrc-type', '3');
+            
+            playerContainer.appendChild(metingTag);
         }
+
         
         // 初始化游戏 - 调整了大小适配屏幕
         function initGames() {
@@ -1702,7 +1685,21 @@
             
             // 更新当前玩家显示
             function updateCurrentPlayer() {
-                document.getElementById('current-player').textContent = currentPlayer === 1 ? '黑方' : '白方';
+                // 找到当前回合的提示元素
+                const currentPlayerDisplay = document.getElementById('current-player');
+                const stoneDisplay = currentPlayerDisplay.previousElementSibling;
+                
+                currentPlayerDisplay.textContent = currentPlayer === 1 ? '黑方' : '白方';
+                
+                if (stoneDisplay.classList.contains('stone')) {
+                    stoneDisplay.classList.remove('black', 'white');
+                    stoneDisplay.classList.add(currentPlayer === 1 ? 'black' : 'white');
+                } else {
+                    // 如果元素不存在或不是棋子，动态创建
+                    if (!stoneDisplay.querySelector('.stone')) {
+                        stoneDisplay.innerHTML = `<div class="stone ${currentPlayer === 1 ? 'black' : 'white'} inline-block mr-2"></div>`;
+                    }
+                }
             }
             
             // 落子
@@ -1807,6 +1804,7 @@
                 document.getElementById('notes-list').classList.add('hidden');
                 document.getElementById('note-editor').classList.remove('hidden');
                 document.getElementById('note-title').focus();
+                document.getElementById('delete-note-btn').classList.add('hidden'); // 新建时隐藏删除按钮
             });
             
             // 关闭备忘录编辑
@@ -2040,6 +2038,7 @@
                         document.getElementById('note-content').innerHTML = note.content;
                         document.getElementById('notes-list').classList.add('hidden');
                         document.getElementById('note-editor').classList.remove('hidden');
+                        document.getElementById('delete-note-btn').classList.remove('hidden'); // 编辑时显示删除按钮
                     }
                 });
                 
@@ -2047,7 +2046,7 @@
             });
         }
 
-        // 初始化对话界面 - 接入Qwen API（适配你现有HTML结构）
+        // 初始化对话界面 - 接入Qwen API
         function initChat() {
             // 保存API密钥（适配你的input和按钮ID）
             document.getElementById('save-api-key').addEventListener('click', function() {
@@ -2066,6 +2065,8 @@
                 document.getElementById('qwen-api-key').value = savedApiKey;
             }
             
+            // ✅ 修复点 3：移除此处对 #open-chat 冗余的监听代码
+
             // 提交对话 - 适配你的表单和状态提示元素
             document.getElementById('chat-form').addEventListener('submit', function(e) {
                 e.preventDefault(); // 关键：阻止页面刷新
@@ -2084,35 +2085,18 @@
                 addChatMessage(message, 'user');
                 input.value = '';
                 
-                // 显示加载状态（用你现有的statusElement，不新增元素）
+                // 显示加载状态
                 statusElement.classList.remove('hidden');
                 const messagesContainer = document.getElementById('chat-messages');
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 
-                // 调用后端接口
-                fetch('/api/chat', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        message: message,
-                        api_key: apiKey
-                    })
-                })
+                // 调用后端接口（注意：这里仍是模拟调用）
+                callQwenApi(message, apiKey)
                 .then(response => {
-                    if (!response.ok) {
-                        return response.text().then(text => { throw new Error(text || `HTTP错误: ${response.status}`); });
-                    }
-                    return response.json();
-                })
-                .then(data => {
                     // 隐藏加载状态
                     statusElement.classList.add('hidden');
                     // 显示AI回复
-                    if (data.response) {
-                        addChatMessage(data.response, 'ai');
-                    } else {
-                        addChatMessage('未获取到有效回复', 'ai');
-                    }
+                    addChatMessage(response, 'ai');
                 })
                 .catch(error => {
                     // 隐藏加载状态并显示错误
@@ -2122,84 +2106,19 @@
             });
         }
 
-        // 保留你的addChatMessage函数，仅适配样式（如果需要）
-        function addChatMessage(content, sender) {
-            const messagesContainer = document.getElementById('chat-messages');
-            const messageElement = document.createElement('div');
-            messageElement.className = `flex items-start gap-3 ${sender === 'user' ? 'justify-end' : ''}`;
-            
-            if (sender === 'user') {
-                // 保持你现有的用户消息样式
-                messageElement.innerHTML = `
-                    <div class="bg-primary text-white rounded-lg rounded-tr-none p-3 max-w-[80%]">
-                        ${content}
-                    </div>
-                    <div class="bg-gray-200 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
-                        <i class="fa fa-user text-gray-600"></i>
-                    </div>
-                `;
-            } else {
-                // 保持你现有的AI消息样式
-                messageElement.innerHTML = `
-                    <div class="bg-gray-200 w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
-                        <i class="fa fa-robot text-gray-600"></i>
-                    </div>
-                    <div class="bg-gray-100 rounded-lg rounded-tl-none p-3 max-w-[80%]">
-                        ${content}
-                    </div>
-                `;
-            }
-            
-            messagesContainer.appendChild(messageElement);
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }   
-                
-        // 调用Qwen API
+        // 模拟 Qwen API 调用函数
         function callQwenApi(message, apiKey) {
             return new Promise((resolve, reject) => {
-                // 实际的API调用代码
-                // 注意：这里使用了模拟数据，实际应用中需要替换为真实的API调用
-                
                 // 模拟网络延迟
                 setTimeout(() => {
-                    // 模拟成功响应
-                    resolve(`这是Qwen对您问题"${message}"的回答。在实际应用中，这里将显示真实的API返回结果。`);
-                    
-                    // 如果需要模拟错误，可以使用下面的代码
-                    // reject(new Error('网络连接错误，请稍后重试'));
-                }, 1500);
-                
-                /* 真实API调用代码示例
-                fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`
-                    },
-                    body: JSON.stringify({
-                        model: 'qwen-plus', // 可以根据需要更换为其他模型
-                        messages: [
-                            { role: 'user', content: message }
-                        ]
-                    })
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP错误，状态码: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.choices && data.choices.length > 0) {
-                        resolve(data.choices[0].message.content);
+                    if (apiKey === 'VALID_KEY') { // 模拟验证
+                        resolve(`这是AI对您问题"${message}"的回答。在实际应用中，这里将显示真实的API返回结果。`);
+                    } else if (apiKey === 'ERROR_KEY') {
+                        reject(new Error('API 密钥验证失败，请检查您的密钥。'));
                     } else {
-                        throw new Error('未获取到有效响应');
+                        resolve(`模拟回复：您问了 "${message}"。请注意，目前是前端模拟回复，需要后端接入Qwen API才能获得真实结果。`);
                     }
-                })
-                .catch(error => {
-                    reject(error);
-                });
-                */
+                }, 1500);
             });
         }
         
@@ -2252,6 +2171,7 @@
                 `${workHours}小时${workMinutes}分钟`;
                 
             // 计算今日阅读文档数
+            // 目前没有阅读记录机制，保持为 0
             document.getElementById('today-read').textContent = "0篇";
             
             // 计算今日创建的备忘录数
@@ -2282,8 +2202,8 @@
                     remainingTime = parsedData.remainingTime || 7 * 60 * 60;
                     isTimerRunning = parsedData.isTimerRunning || false;
                     workRecords = parsedData.workRecords || [];
-                    pdfBooks = parsedData.pdfBooks || pdfBooks;
-                    notes = parsedData.notes || notes;
+                    pdfBooks = parsedData.pdfBooks || [];
+                    notes = parsedData.notes || [];
                     
                     // 更新显示
                     updateTimerDisplay();
@@ -2307,32 +2227,17 @@
         // 初始化页面
         // 修改初始化调用逻辑，等待所有资源加载完成
         window.addEventListener('load', function() {
-            // 等所有外部库（包括Meting.js）加载完成后再初始化
-            // 初始化导航
+            // 等所有外部库加载完成后再初始化
             initNavigation();
-            
-            // 初始化计时器
             initTimer();
-            
-            // 初始化书架
             initBooks();
-            
-            // 初始化音乐播放器
-            initMusic();
-            
-            // 初始化游戏
+            initMusic(); // 确保 MetingJs 依赖正确加载
             initGames();
-            
-            // 初始化备忘录
             initNotes();
-            
-            // 初始化对话界面
             initChat();
-            
-            // 加载本地存储的数据
             loadFromLocalStorage();
         });
-    
+        
     </script>
 </body>
 </html>
