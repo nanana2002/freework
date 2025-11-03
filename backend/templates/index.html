@@ -172,6 +172,33 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        /* 书籍封面样式 */
+        .book-cover {
+            height: 48;
+            object-fit: cover; /* 确保图片覆盖整个区域 */
+            width: 100%;
+        }
+
+        /* TXT阅读器样式 */
+        #txt-reader {
+            transition: background-color 0.3s;
+            scroll-behavior: smooth;
+            height: 100%; 
+            overflow-y: scroll; 
+        }
+        
+        .txt-page {
+            min-height: 100%; 
+            padding: 1rem 5rem;
+            line-height: 1.8;
+            font-size: 1.1rem;
+            white-space: pre-wrap; 
+        }
+        
+        .bg-light-mode { background-color: #F8FAFC; color: #1E293B; }
+        .bg-sepia-mode { background-color: #f7f3e8; color: #5a4a35; }
+        .bg-dark-mode { background-color: #1E293B; color: #F8FAFC; }
     </style>
 </head>
 
@@ -243,6 +270,10 @@
                 <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center" data-page="chat">
                     <i class="fa fa-comments mr-2"></i> 对话
                 </button>
+                <!-- 书签导航按钮 -->
+                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center" data-page="bookmarks">
+                    <i class="fa fa-bookmark mr-2"></i> 书签
+                </button>
             </div>
         </nav>
 
@@ -265,7 +296,7 @@
                             <i class="fa fa-book text-secondary text-xl"></i>
                         </div>
                         <h3 class="font-bold text-lg mb-2">我的书架</h3>
-                        <p class="text-gray-600">上传和管理PDF文档，方便阅读</p>
+                        <p class="text-gray-600">上传和管理文档</p>
                     </div>
                     
                     <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 hover:shadow-lg transition cursor-pointer card-shadow" onclick="navigateTo('music')">
@@ -298,6 +329,14 @@
                         </div>
                         <h3 class="font-bold text-lg mb-2">AI对话</h3>
                         <p class="text-gray-600">与大语言模型对话</p>
+                    </div>
+                    
+                    <div class="bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl p-5 hover:shadow-lg transition cursor-pointer card-shadow" onclick="navigateTo('bookmarks')">
+                        <div class="bg-gray-300 w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                            <i class="fa fa-bookmark text-gray-700 text-xl"></i>
+                        </div>
+                        <h3 class="font-bold text-lg mb-2">书签</h3>
+                        <p class="text-gray-600">快速访问常用网址</p>
                     </div>
                 </div>
             </div>
@@ -351,9 +390,43 @@
                     
                     <div class="border-t pt-6">
                         <h3 class="font-bold text-lg mb-4">工作记录</h3>
+                        <!-- 手动添加记录表单 -->
+                        <div class="mb-6 p-4 border rounded-lg bg-gray-50">
+                            <h4 class="font-semibold mb-2 flex items-center">
+                                <i class="fa fa-plus-circle mr-2 text-primary"></i> 手动添加记录
+                            </h4>
+                            <div class="flex flex-wrap items-end gap-3">
+                                <div class="flex-1 min-w-[100px]">
+                                    <label class="text-sm text-gray-600 block mb-1">时长 (小时)</label>
+                                    <input type="number" id="manual-hours" min="0.5" step="0.5" value="1" 
+                                           class="w-full border rounded p-2 text-center">
+                                </div>
+                                <div class="flex-1 min-w-[150px]">
+                                    <label class="text-sm text-gray-600 block mb-1">日期</label>
+                                    <input type="date" id="manual-date" 
+                                           class="w-full border rounded p-2">
+                                </div>
+                                <button id="add-manual-record" 
+                                        class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition flex-shrink-0">
+                                    <i class="fa fa-save mr-1"></i> 添加
+                                </button>
+                            </div>
+                        </div>
+                        
                         <div class="space-y-3" id="work-records">
                             <div class="text-gray-500 text-center py-4">暂无工作记录</div>
                         </div>
+                    </div>
+
+                    <!-- 月视图图表 -->
+                    <div class="border-t pt-6 mt-6">
+                        <h3 class="font-bold text-lg mb-4">每月工作时长视图</h3>
+                        <div class="bg-white p-4 rounded-lg shadow">
+                            <canvas id="monthly-chart" width="400" height="200" class="w-full"></canvas>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2 text-center">
+                            图表展示了最近几个月的工作小时数（不包括未来记录）。
+                        </p>
                     </div>
                 </div>
             </div>
@@ -364,21 +437,25 @@
                 <div class="flex flex-wrap justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold">我的书架</h2>
                     <button id="upload-pdf-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition flex items-center">
-                        <i class="fa fa-upload mr-2"></i> 上传PDF
+                        <i class="fa fa-upload mr-2"></i> 上传文档 (.pdf / .txt)
                     </button>
                 </div>
                 
                 <div id="upload-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
                     <div class="bg-white rounded-xl p-6 max-w-md w-full">
-                        <h3 class="text-xl font-bold mb-4">上传PDF文档</h3>
+                        <h3 class="text-xl font-bold mb-4">上传文档</h3>
                         <form id="pdf-upload-form">
                             <div class="mb-4">
-                                <label class="block text-gray-700 mb-2" for="pdf-title">文档标题</label>
+                                <label class="block text-gray-700 mb-2" for="pdf-title">文档标题 (用于命名)</label>
                                 <input type="text" id="pdf-title" class="w-full border rounded p-2" required>
                             </div>
                             <div class="mb-4">
-                                <label class="block text-gray-700 mb-2" for="pdf-file">选择PDF文件</label>
-                                <input type="file" id="pdf-file" accept=".pdf" class="w-full border rounded p-2" required>
+                                <label class="block text-gray-700 mb-2" for="pdf-file">选择文档 (.pdf, .txt)</label>
+                                <input type="file" id="pdf-file" accept=".pdf,.txt" class="w-full border rounded p-2" required>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-gray-700 mb-2" for="pdf-cover">选择封面图片 (可选)</label>
+                                <input type="file" id="pdf-cover" accept="image/*" class="w-full border rounded p-2">
                             </div>
                             <div class="flex justify-end gap-3">
                                 <button type="button" id="cancel-upload" class="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-100 transition">
@@ -393,9 +470,16 @@
                 </div>
                 
                 <div class="book-shelf grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                    <!-- 初始卡片结构用于占位，实际渲染将由 JS 负责 -->
                     <div class="book bg-white rounded-lg overflow-hidden card-shadow cursor-pointer" data-id="1">
-                        <div class="h-48 bg-gray-200 flex items-center justify-center">
-                            <i class="fa fa-file-pdf-o text-5xl text-red-500"></i>
+                        <div class="absolute top-2 right-2 z-10">
+                            <button class="delete-book bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition" 
+                                    data-id="1">
+                                <i class="fa fa-times text-xs"></i>
+                            </button>
+                        </div>
+                        <div class="h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
+                            <img src="static/icons/file-earmark-pdf.svg" alt="文档封面" class="book-cover h-48 w-full object-cover p-10">
                         </div>
                         <div class="p-3">
                             <h3 class="font-bold truncate">示例文档1</h3>
@@ -404,8 +488,14 @@
                     </div>
                     
                     <div class="book bg-white rounded-lg overflow-hidden card-shadow cursor-pointer" data-id="2">
-                        <div class="h-48 bg-gray-200 flex items-center justify-center">
-                            <i class="fa fa-file-pdf-o text-5xl text-red-500"></i>
+                        <div class="absolute top-2 right-2 z-10">
+                            <button class="delete-book bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition" 
+                                    data-id="2">
+                                <i class="fa fa-times text-xs"></i>
+                            </button>
+                        </div>
+                        <div class="h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
+                            <img src="static/icons/file-earmark-pdf.svg" alt="文档封面" class="book-cover h-48 w-full object-cover p-10">
                         </div>
                         <div class="p-3">
                             <h3 class="font-bold truncate">示例文档2</h3>
@@ -417,6 +507,7 @@
             </div>
         </div>
         
+        <!-- PDF 阅读器 -->
         <div id="pdf-reader" class="mt-8 hidden">
             <div class="bg-white rounded-xl p-6 card-shadow">
                 <div class="p-4 border-b flex justify-between items-center">
@@ -444,14 +535,55 @@
                 </div>
             </div>
         </div>
-    </div>
+        
+        <!-- TXT 阅读器 -->
+        <div id="txt-reader-modal" class="fixed inset-0 z-50 hidden flex flex-col">
+            <header class="bg-dark text-light p-3 flex justify-between items-center flex-shrink-0">
+                <h3 id="txt-viewer-title" class="text-xl font-bold"></h3>
+                <div class="flex items-center space-x-3">
+                    <label for="bg-mode" class="text-sm">背景:</label>
+                    <select id="bg-mode" class="text-dark p-1 rounded">
+                        <option value="light-mode">白天</option>
+                        <option value="sepia-mode">羊皮纸</option>
+                        <option value="dark-mode">夜间</option>
+                    </select>
+                    <button id="close-txt-reader" class="text-light hover:text-red-400 text-2xl">
+                        <i class="fa fa-times-circle"></i>
+                    </button>
+                </div>
+                <!-- 在TXT阅读器工具栏添加 -->
+                <div class="txt-encoding-selector mb-2">
+                    <label for="txt-display-encoding">显示编码：</label>
+                    <select id="txt-display-encoding" class="text-dark p-1 rounded">
+                        <option value="utf-8">UTF-8</option>
+                        <option value="gbk">GBK</option>
+                        <option value="gb18030">GB18030</option>
+                        <option value="big5">Big5</option>
+                    </select>
+                </div>
+            </header>
+            <div id="txt-reader" class="flex-grow overflow-hidden bg-light-mode" tabindex="0">
+                <div id="txt-content" class="txt-page mx-auto" style="max-width: 800px;">
+                    <!-- 文本内容将在这里加载 -->
+                </div>
+            </div>
+            <footer class="bg-dark text-light p-2 flex justify-center items-center flex-shrink-0">
+                <button id="txt-prev-page" class="mx-3 px-3 py-1 bg-primary hover:bg-blue-600 rounded">
+                    <i class="fa fa-arrow-up"></i> 上一页
+                </button>
+                <span id="txt-page-info" class="text-sm">第 1 页 / 共 1 页</span>
+                <button id="txt-next-page" class="mx-3 px-3 py-1 bg-primary hover:bg-blue-600 rounded">
+                    <i class="fa fa-arrow-down"></i> 下一页
+                </button>
+            </footer>
+        </div>
 
         <div id="music" class="page">
             <div class="bg-white rounded-xl p-6 card-shadow">
                 <h2 class="text-2xl font-bold mb-6">音乐播放器</h2>
                 
                 <div class="mb-6">
-                    <h3 class="font-bold mb-3">网易云歌单设置</h3>
+                    <h3 class="font-bold text-lg mb-3">网易云歌单设置</h3>
                     <div class="flex flex-col md:flex-row gap-3 items-start md:items-center">
                         <input type="text" id="netease-playlist-id" 
                             value="877029680" placeholder="输入网易云歌单ID（从歌单URL中提取）"
@@ -459,6 +591,13 @@
                         <button id="save-music-setting" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition">
                             保存设置
                         </button>
+                    </div>
+                    <div class="flex items-center gap-3 mt-4">
+                        <label for="music-order" class="text-gray-700 font-medium">播放模式</label>
+                        <select id="music-order" class="border rounded p-2">
+                            <option value="list">顺序播放</option>
+                            <option value="random">随机播放</option>
+                        </select>
                     </div>
                     <p class="text-sm text-gray-500 mt-2">
                         歌单ID获取方式：网易云歌单URL中 "id=" 后面的数字（例：https://music.163.com/playlist?id=877029680 → ID为877029680）
@@ -478,7 +617,7 @@
                 <h2 class="text-2xl font-bold mb-6">休闲游戏</h2>
                 
                 <div class="mb-6">
-                    <h3 class="font-bold mb-3">选择游戏</h3>
+                    <h3 class="font-bold text-lg mb-3">选择游戏</h3>
                     <div class="flex flex-wrap gap-3">
                         <button class="game-selector active bg-primary text-white px-4 py-2 rounded-lg transition" data-game="1024">
                             1024游戏
@@ -625,7 +764,7 @@
                 <h2 class="text-2xl font-bold mb-6">AI对话</h2>
                 
                 <div class="mb-6">
-                    <h3 class="font-bold mb-3">Qwen API 设置</h3>
+                    <h3 class="font-bold text-lg mb-3">Qwen API 设置</h3>
                     <div class="flex flex-col md:flex-row gap-3 items-start md:items-center">
                         <input type="password" id="qwen-api-key" placeholder="请输入您的Qwen API密钥" 
                                class="flex-1 border rounded p-2">
@@ -662,6 +801,31 @@
                 </div>
             </div>
         </div>
+        
+        <div id="bookmarks" class="page">
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <h2 class="text-2xl font-bold mb-6">快速书签</h2>
+                
+                <div class="flex flex-wrap items-end gap-3 mb-6 p-4 border rounded-lg bg-gray-50">
+                    <div class="flex-1 min-w-[150px]">
+                        <label class="text-sm text-gray-600 block mb-1" for="bookmark-title">标题</label>
+                        <input type="text" id="bookmark-title" placeholder="如：Flask 文档" class="w-full border rounded p-2">
+                    </div>
+                    <div class="flex-1 min-w-[250px]">
+                        <label class="text-sm text-gray-600 block mb-1" for="bookmark-url">网址 (URL)</label>
+                        <input type="url" id="bookmark-url" placeholder="如：https://flask.palletsprojects.com" class="w-full border rounded p-2">
+                    </div>
+                    <button id="add-bookmark" class="bg-secondary hover:bg-teal-600 text-white px-4 py-2 rounded-lg transition flex-shrink-0">
+                        <i class="fa fa-plus mr-1"></i> 添加书签
+                    </button>
+                </div>
+                
+                <div id="bookmarks-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- 书签将在这里渲染 -->
+                    <div class="text-gray-500 text-center py-4 col-span-full">暂无书签</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <footer class="bg-dark text-white py-6 mt-12">
@@ -680,44 +844,9 @@
         // PDF.js配置（依赖pdf.min.js已加载）
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.bootcdn.net/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        // 全局变量
-        let timerInterval = null;
-        let remainingTime = 7 * 60 * 60; // 默认7小时，单位：秒
-        let isTimerRunning = false;
-        let workRecords = [];
-        let pdfBooks = [];
-        let notes = [];
-        let currentNoteId = null;
-        let pdfDoc = null;
-        let currentPdfPage = 1;
-        
-       
-        // 初始化导航
-        function initNavigation() {
-            const navButtons = document.querySelectorAll('.nav-btn');
-            
-            navButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    // 移除所有活动状态
-                    navButtons.forEach(btn => btn.classList.remove('active', 'bg-primary', 'text-white'));
-                    navButtons.forEach(btn => btn.classList.add('hover:bg-gray-100'));
-                    
-                    // 设置当前按钮为活动状态
-                    this.classList.add('active', 'bg-primary', 'text-white');
-                    this.classList.remove('hover:bg-gray-100');
-                    
-                    // 显示对应的页面
-                    const pageId = this.getAttribute('data-page');
-                    showPage(pageId);
-                });
-            });
-            
-            // 设置初始活动状态
-            document.querySelector('.nav-btn.active').classList.add('bg-primary', 'text-white');
-            document.querySelector('.nav-btn.active').classList.remove('hover:bg-gray-100');
-        }
-        
-        // 显示指定页面
+        // ----------------------------------------------------
+        // 核心导航函数 (放在顶部解决 ReferenceError)
+        // ----------------------------------------------------
         function showPage(pageId) {
             const pages = document.querySelectorAll('.page');
             pages.forEach(page => {
@@ -726,7 +855,6 @@
             
             document.getElementById(pageId).classList.add('active');
             
-            // 确保书架和阅读器之间的切换逻辑得到处理
             if (pageId !== 'books') {
                 document.getElementById('pdf-reader').classList.add('hidden');
                 const shelfArea = document.querySelector('.book-shelf')?.parentElement;
@@ -734,9 +862,13 @@
                     shelfArea.classList.remove('hidden');
                 }
             }
+
+            // 每次切换到计时器页面时，重新渲染图表
+            if (pageId === 'timer') {
+                renderMonthlyChart();
+            }
         }
-        
-        // 导航到指定页面
+
         function navigateTo(pageId) {
             const navButton = document.querySelector(`.nav-btn[data-page="${pageId}"]`);
             if (navButton) {
@@ -744,18 +876,65 @@
             }
         }
         
-        // 初始化计时器 - 右下角隐藏式
+        // ----------------------------------------------------
+        // 全局变量
+        // ----------------------------------------------------
+        let timerInterval = null;
+        let workGoalTime = 7 * 60 * 60; // 目标总时长（秒）
+        let remainingTime = 7 * 60 * 60; // 剩余时间（秒）
+        let isTimerRunning = false;
+        let workRecords = []; // { id, date, time, hours, manual }
+        let pdfBooks = []; // { id, title, date, file_path, file_type, cover_url, scroll_pos }
+        let notes = [];
+        let bookmarks = []; // { id, title, url }
+        let currentNoteId = null;
+        let pdfDoc = null;
+        let currentPdfPage = 1;
+        let currentTxtBookId = null; // 当前阅读的TXT书籍ID
+        
+        // 修正 PDF 封面：使用更稳定的 Jsdelivr SVG
+        const DEFAULT_PDF_COVER = '/uploads/images/file-earmark-pdf.svg'; // 假定您将此SVG放在后端静态目录
+        const DEFAULT_TXT_COVER = '/uploads/images/file-earmark-text.svg';
+
+
+        // ----------------------------------------------------
+        // 导航逻辑
+        // ----------------------------------------------------
+        function initNavigation() {
+            const navButtons = document.querySelectorAll('.nav-btn');
+            
+            navButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    navButtons.forEach(btn => btn.classList.remove('active', 'bg-primary', 'text-white'));
+                    navButtons.forEach(btn => btn.classList.add('hover:bg-gray-100'));
+                    
+                    this.classList.add('active', 'bg-primary', 'text-white');
+                    this.classList.remove('hover:bg-gray-100');
+                    
+                    const pageId = this.getAttribute('data-page');
+                    showPage(pageId);
+                });
+            });
+            
+            document.querySelector('.nav-btn.active').classList.add('bg-primary', 'text-white');
+            document.querySelector('.nav-btn.active').classList.remove('hover:bg-gray-100');
+        }
+        
+        // ----------------------------------------------------
+        // 计时器逻辑 (Live Update 修正)
+        // ----------------------------------------------------
         function initTimer() {
             const timerWidget = document.getElementById('timer-widget');
             const timerHandle = document.getElementById('timer-handle');
             const minimizeTimer = document.getElementById('minimize-timer');
+
+            document.getElementById('manual-date').valueAsDate = new Date();
             
-            // 点击手柄显示/隐藏计时器
+            // 悬浮窗逻辑
             timerHandle.addEventListener('click', function() {
                 timerWidget.classList.toggle('timer-hidden');
                 timerWidget.classList.toggle('timer-visible');
                 
-                // 切换手柄图标
                 const icon = this.querySelector('i');
                 if (timerWidget.classList.contains('timer-visible')) {
                     icon.classList.remove('fa-chevron-left');
@@ -766,18 +945,6 @@
                 }
             });
             
-            // 鼠标悬停显示计时器
-            timerWidget.addEventListener('mouseenter', function() {
-                if (this.classList.contains('timer-hidden')) {
-                    this.classList.remove('timer-hidden');
-                    this.classList.add('timer-visible');
-                    const icon = timerHandle.querySelector('i');
-                    icon.classList.remove('fa-chevron-left');
-                    icon.classList.add('fa-chevron-right');
-                }
-            });
-            
-            // 最小化按钮
             minimizeTimer.addEventListener('click', function() {
                 timerWidget.classList.add('timer-hidden');
                 timerWidget.classList.remove('timer-visible');
@@ -786,42 +953,71 @@
                 icon.classList.add('fa-chevron-left');
             });
             
-            // 更新预计结束时间
-            updateEndTime();
+            // 计时器控制
+            const workHoursInput = document.getElementById('work-hours');
+            const pageWorkHoursInput = document.getElementById('timer-page-hours');
+
+            // 监听工作目标变化
+            const handleGoalChange = function() {
+                const hours = parseFloat(this.value) || 0;
+                workGoalTime = Math.round(hours * 60 * 60);
+                
+                // 同步值
+                workHoursInput.value = hours;
+                pageWorkHoursInput.value = hours;
+
+                updateRemainingTime();
+                updateEndTime();
+            };
+
+            workHoursInput.addEventListener('change', handleGoalChange);
+            pageWorkHoursInput.addEventListener('change', handleGoalChange);
             
-            // 小部件计时器控制
             document.getElementById('start-timer').addEventListener('click', startTimer);
             document.getElementById('pause-timer').addEventListener('click', pauseTimer);
             document.getElementById('reset-timer').addEventListener('click', resetTimer);
-            document.getElementById('work-hours').addEventListener('change', function() {
-                const hours = parseFloat(this.value) || 0;
-                remainingTime = Math.round(hours * 60 * 60);
-                updateTimerDisplay();
-                updateEndTime();
-                
-                // 同步到计时器页面
-                document.getElementById('timer-page-hours').value = hours;
-            });
-            
-            // 页面计时器控制
             document.getElementById('timer-page-start').addEventListener('click', startTimer);
             document.getElementById('timer-page-pause').addEventListener('click', pauseTimer);
             document.getElementById('timer-page-reset').addEventListener('click', resetTimer);
-            document.getElementById('timer-page-hours').addEventListener('change', function() {
-                const hours = parseFloat(this.value) || 0;
-                remainingTime = Math.round(hours * 60 * 60);
-                updateTimerDisplay();
-                updateEndTime();
-                
-                // 同步到小部件
-                document.getElementById('work-hours').value = hours;
-            });
             
-            // 更新计时器显示
-            updateTimerDisplay();
+            document.getElementById('add-manual-record').addEventListener('click', addManualRecord);
+
+            // 初始更新
+            updateRemainingTime();
+            updateEndTime();
         }
         
-        // 开始计时器
+        function updateRemainingTime() {
+            const totalGoalHours = parseFloat(document.getElementById('work-hours').value) || 0;
+            workGoalTime = Math.round(totalGoalHours * 60 * 60);
+
+            // 计算已完成时长 (小时)
+            const completedHours = workRecords.reduce((total, record) => total + record.hours, 0);
+            const completedTimeSec = Math.round(completedHours * 60 * 60);
+            
+            let newRemainingTime = workGoalTime - completedTimeSec;
+            
+            const wasRunning = isTimerRunning;
+            if (wasRunning) {
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+            }
+
+            remainingTime = Math.max(0, newRemainingTime);
+
+            if (wasRunning) {
+                // 如果之前正在运行，用新的剩余时间重新启动
+                startTimer();
+            } else {
+                // 否则只是更新显示
+                updateTimerDisplay();
+            }
+
+            updateEndTime();
+            saveToLocalStorage();
+            renderMonthlyChart(); // 每次记录变动时更新图表
+        }
+
         function startTimer() {
             if (isTimerRunning) return;
             
@@ -843,20 +1039,16 @@
                     document.getElementById('timer-page-start').classList.remove('hidden');
                     document.getElementById('timer-page-pause').classList.add('hidden');
                     
-                    // 记录完成的工作
-                    const hours = parseFloat(document.getElementById('work-hours').value) || 0;
-                    addWorkRecord(hours);
+                    const hours = workGoalTime / 3600;
+                    addWorkRecord(hours, false);
                     
-                    // 提示完成
                     alert('工作时间已结束！');
                 }
                 
-                // 保存状态
                 saveToLocalStorage();
             }, 1000);
         }
         
-        // 暂停计时器
         function pauseTimer() {
             if (!isTimerRunning) return;
             
@@ -867,23 +1059,16 @@
             document.getElementById('timer-page-start').classList.remove('hidden');
             document.getElementById('timer-page-pause').classList.add('hidden');
             
-            // 保存状态
             saveToLocalStorage();
         }
         
-        // 重置计时器
         function resetTimer() {
             pauseTimer();
             const hours = parseFloat(document.getElementById('work-hours').value) || 0;
-            remainingTime = Math.round(hours * 60 * 60);
-            updateTimerDisplay();
-            updateEndTime();
-            
-            // 保存状态
-            saveToLocalStorage();
+            workGoalTime = Math.round(hours * 60 * 60);
+            updateRemainingTime();
         }
         
-        // 更新计时器显示
         function updateTimerDisplay() {
             const hours = Math.floor(remainingTime / 3600);
             const minutes = Math.floor((remainingTime % 3600) / 60);
@@ -895,7 +1080,6 @@
             document.getElementById('timer-page-display').textContent = timeString;
         }
         
-        // 更新预计结束时间
         function updateEndTime() {
             const now = new Date();
             const endTime = new Date(now.getTime() + remainingTime * 1000);
@@ -907,8 +1091,7 @@
             document.getElementById('timer-page-end-time').textContent = `${hours}:${minutes}`;
         }
         
-        // 添加工作记录
-        function addWorkRecord(hours) {
+        function addWorkRecord(hours, manual = false) {
             const now = new Date();
             const dateString = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
             const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
@@ -917,18 +1100,50 @@
                 id: Date.now(),
                 date: dateString,
                 time: timeString,
-                hours: hours
+                hours: hours,
+                manual: manual
             };
             
             workRecords.unshift(record);
             renderWorkRecords();
             updateTodayStats();
+            updateRemainingTime();
+        }
+
+        function addManualRecord() {
+            const hoursInput = document.getElementById('manual-hours');
+            const dateInput = document.getElementById('manual-date');
             
-            // 保存状态
+            const hours = parseFloat(hoursInput.value);
+            const date = dateInput.value;
+            
+            if (!hours || hours <= 0 || !date) {
+                alert('请输入有效的工作时长和日期。');
+                return;
+            }
+            
+            const now = new Date();
+            const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            const record = {
+                id: Date.now(),
+                date: date,
+                time: timeString,
+                hours: hours,
+                manual: true 
+            };
+            
+            workRecords.unshift(record);
+            renderWorkRecords();
+            updateTodayStats();
+            updateRemainingTime();
             saveToLocalStorage();
+            
+            alert(`已成功添加 ${hours} 小时的工作记录 (${date})`);
+            
+            hoursInput.value = '1';
         }
         
-        // 渲染工作记录
         function renderWorkRecords() {
             const container = document.getElementById('work-records');
             
@@ -937,14 +1152,18 @@
                 return;
             }
             
+            workRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
+
             container.innerHTML = '';
             
             workRecords.forEach(record => {
+                const manualTag = record.manual ? '<span class="text-xs bg-blue-100 text-blue-800 rounded px-2 py-0.5 ml-2">手动</span>' : '';
+
                 const recordElement = document.createElement('div');
                 recordElement.className = 'border rounded-lg p-3 flex justify-between items-center';
                 recordElement.innerHTML = `
                     <div>
-                        <p class="font-medium">${record.date} ${record.time}</p>
+                        <p class="font-medium">${record.date} ${record.time} ${manualTag}</p>
                         <p class="text-sm text-gray-500">完成了 ${record.hours} 小时的工作</p>
                     </div>
                     <button class="text-red-500 hover:text-red-700" onclick="deleteWorkRecord(${record.id})">
@@ -955,124 +1174,267 @@
             });
         }
         
-        // 删除工作记录
         function deleteWorkRecord(id) {
             workRecords = workRecords.filter(record => record.id !== id);
             renderWorkRecords();
             updateTodayStats();
+            updateRemainingTime();
             
-            // 保存状态
             saveToLocalStorage();
         }
-        
-        // 初始化书架
+
+        // 月视图图表逻辑
+        function getMonthlyData() {
+            const data = {};
+            const now = new Date();
+            
+            // 筛选最近 6 个月的数据
+            for (let i = 0; i < 6; i++) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const monthKey = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+                const label = `${d.getMonth() + 1}月`;
+                data[monthKey] = { hours: 0, label: label };
+            }
+
+            workRecords.forEach(record => {
+                const monthKey = record.date.substring(0, 7); // YYYY-MM
+                if (data.hasOwnProperty(monthKey)) {
+                    data[monthKey].hours += record.hours;
+                }
+            });
+
+            // 提取数据点和标签，并确保顺序正确（从旧到新）
+            const keys = Object.keys(data).sort();
+            const labels = keys.map(key => data[key].label);
+            const hours = keys.map(key => Math.round(data[key].hours));
+            
+            return { labels, hours };
+        }
+
+        function renderMonthlyChart() {
+            const chartCanvas = document.getElementById('monthly-chart');
+            if (!chartCanvas) return;
+            
+            const ctx = chartCanvas.getContext('2d');
+            const data = getMonthlyData();
+            const { labels, hours } = data;
+            
+            // 清除画布
+            ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+
+            const padding = 20;
+            const chartHeight = chartCanvas.height - 2 * padding;
+            const chartWidth = chartCanvas.width - 2 * padding;
+            const maxHours = Math.max(...hours, 1); // 确保最大值不为 0
+            const numBars = hours.length;
+            const totalSpacing = chartWidth / numBars * 0.2; // 总间距占宽度的 20%
+            const barWidth = (chartWidth - totalSpacing * (numBars - 1)) / numBars;
+            const spacing = (chartWidth - numBars * barWidth) / (numBars - 1);
+            
+            const effectiveSpacing = numBars > 1 ? spacing : chartWidth * 0.5;
+
+            // 绘制轴线
+            ctx.strokeStyle = '#ccc';
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, chartCanvas.height - padding);
+            ctx.lineTo(chartCanvas.width - padding, chartCanvas.height - padding);
+            ctx.stroke();
+
+            // 绘制柱状图
+            ctx.fillStyle = '#3B82F6'; // Primary color
+            hours.forEach((h, index) => {
+                const barHeight = (h / maxHours) * chartHeight;
+                let x;
+                if (numBars > 1) {
+                    x = padding + index * (barWidth + spacing);
+                } else {
+                    x = padding + chartWidth * 0.5 - barWidth / 2; // 单个柱子居中
+                }
+
+                const y = chartCanvas.height - padding - barHeight;
+
+                ctx.fillRect(x, y, barWidth, barHeight);
+
+                // 绘制标签（月份）
+                ctx.fillStyle = '#666';
+                ctx.textAlign = 'center';
+                ctx.fillText(labels[index], x + barWidth / 2, chartCanvas.height - padding + 15);
+                
+                // 绘制数值
+                if (h > 0) {
+                    ctx.textAlign = 'center';
+                    ctx.fillText(h + 'h', x + barWidth / 2, y - 5);
+                }
+            });
+        }
+
+        // ----------------------------------------------------
+        // 书架、PDF、TXT 逻辑
+        // ----------------------------------------------------
         function initBooks() {
-            // 正确：从后端获取所有书籍列表（数据库中已有的PDF）
-            fetch('/api/get-pdfs')
+            fetch('/api/get-pdfs') // 假设您的 API 能够返回 PDF 和 TXT 的列表
                 .then(response => response.json())
                 .then(data => {
                     if (data.books) {
-                        pdfBooks = data.books;  // 用数据库中的书籍列表初始化
-                        renderBooks();  // 渲染书架
+                        pdfBooks = data.books;
+                        renderBooks();
                     }
                 })
                 .catch(error => {
                     console.error('加载书籍失败:', error);
+                    renderBooks();
                 });
     
-            // 上传PDF按钮
             document.getElementById('upload-pdf-btn').addEventListener('click', function() {
                 document.getElementById('upload-modal').classList.remove('hidden');
                 document.getElementById('pdf-title').focus();
             });
             
-            // 取消上传
             document.getElementById('cancel-upload').addEventListener('click', function() {
                 document.getElementById('upload-modal').classList.add('hidden');
                 document.getElementById('pdf-upload-form').reset();
             });
             
-            // 提交上传表单
             document.getElementById('pdf-upload-form').addEventListener('submit', function(e) {
                 e.preventDefault();
                 
-                const title = document.getElementById('pdf-title').value;
+                const title = document.getElementById('pdf-title').value.trim(); // 确保标题无前后空格
                 const fileInput = document.getElementById('pdf-file');
+                const coverInput = document.getElementById('pdf-cover');
                 
-                if (title && fileInput.files.length > 0) {
-                    const file = fileInput.files[0];
-                    const now = new Date();
-                    const dateString = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
-                    
-                    // 创建新书籍记录
-                    const newBook = {
-                        id: Date.now(),
-                        title: title,
-                        date: dateString,
-                        file_path: file.name // 在实际应用中，这里应该上传到服务器并保存文件路径
-                    };
-                    
-                    // 模拟上传
-                    const formData = new FormData();
-                    formData.append('title', title);
-                    formData.append('file', file);
-                    
-                    // 显示加载状态
-                    const submitButton = this.querySelector('button[type="submit"]');
-                    const originalText = submitButton.innerHTML;
-                    submitButton.disabled = true;
-                    submitButton.innerHTML = '<i class="fa fa-circle-o-notch fa-spin mr-1"></i> 上传中...';
-
-                    // 替换模拟上传的setTimeout部分
-                    fetch('/api/upload-pdf', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // 模拟数据结构
-                            data.book = data.book || newBook;
-                            
-                            pdfBooks.push(data.book);
-                            renderBooks();
-                            // 关闭模态框并重置表单
-                            document.getElementById('upload-modal').classList.add('hidden');
-                            this.reset();
-                            // 恢复按钮状态
-                            submitButton.disabled = false;
-                            submitButton.innerHTML = originalText;
-                            saveToLocalStorage();
-                        } else {
-                            alert('上传失败：' + (data.error || '服务器返回错误'));
-                            submitButton.disabled = false;
-                            submitButton.innerHTML = originalText;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('上传错误:', error);
-                        alert('上传失败：网络错误');
-                        submitButton.disabled = false;
-                        submitButton.innerHTML = originalText;
-                    });
+                if (!title || fileInput.files.length === 0) {
+                    alert('请输入标题并选择文件。');
+                    return;
                 }
+
+                const file = fileInput.files[0];
+                const fileExtension = file.name.split('.').pop().toLowerCase();
+                const fileType = (fileExtension === 'pdf' || fileExtension === 'txt') ? fileExtension : null;
+
+                if (!fileType) {
+                    alert('只支持上传 .pdf 或 .txt 文件。');
+                    return;
+                }
+                
+                const now = new Date();
+                const dateString = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+                
+                let coverUrl = null;
+                
+                if (coverInput.files.length > 0) {
+                     const reader = new FileReader();
+                     reader.onload = (event) => {
+                         coverUrl = event.target.result; 
+                         finalizeUpload(file, title, dateString, coverUrl, fileType, this);
+                     };
+                     reader.readAsDataURL(coverInput.files[0]);
+                     return;
+                }
+                
+                finalizeUpload(file, title, dateString, coverUrl, fileType, this);
             });
             
-            // ✅ 修复点 2：修正 ID 引用，并确保书架区域重新显示
             document.getElementById('close-pdf-reader').addEventListener('click', function() {
                 document.getElementById('pdf-reader').classList.add('hidden');
                 const shelfArea = document.querySelector('.book-shelf').parentElement;
                 if (shelfArea) {
-                    shelfArea.classList.remove('hidden'); // 显示书架
+                    shelfArea.classList.remove('hidden');
                 }
-                pdfDoc = null; // 清除PDF实例
+                pdfDoc = null;
+            });
+
+            document.getElementById('close-txt-reader').addEventListener('click', function() {
+                document.getElementById('txt-reader-modal').classList.add('hidden');
+                const shelfArea = document.querySelector('.book-shelf').parentElement;
+                if (shelfArea) {
+                    shelfArea.classList.remove('hidden');
+                }
+                // 停止监听键盘事件
+                document.removeEventListener('keydown', window._txtKeydownHandler);
             });
             
-            // 渲染书籍
+            initTxtReader(); // 初始化TXT阅读器控制
+            
             renderBooks();
         }
         
-        // 渲染书籍
+        // index.html L1350 附近: finalizeUpload 函数
+        function finalizeUpload(file, title, dateString, coverUrl, fileType, formElement) {
+            // ----------------------------------------------------
+            // ✅ 新增：准备 FormData 对象用于实际上传
+            // ----------------------------------------------------
+            const formData = new FormData();
+            formData.append('file', file); // 原始文件数据
+            formData.append('title', title); // 用户输入的文档标题
+            formData.append('file_type', fileType); // 文件的类型 (pdf/txt)
+
+            // 添加编码信息
+            if (fileType === 'txt') {
+                const encoding = document.getElementById('file-encoding').value;
+                formData.append('encoding', encoding);
+            }
+            // 如果有封面图片，也添加到 FormData
+            const coverInput = document.getElementById('pdf-cover');
+            if (coverInput.files.length > 0) {
+                formData.append('cover', coverInput.files[0]);
+            }
+            
+            // ----------------------------------------------------
+            // 模拟文件名：仅用于前端在请求成功后更新 UI
+            // ----------------------------------------------------
+            const timestamp = Date.now() / 1000;
+            const safeTitle = title.replace(/[^\w\s-]/g, '').trim().replace(/ /g, '_');
+            const backendFileName = `${safeTitle}_${timestamp.toFixed(0)}.${fileType}`;
+            
+            const submitButton = formElement.querySelector('button[type="submit"]'); 
+            const originalText = submitButton.innerHTML;
+            
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fa fa-circle-o-notch fa-spin mr-1"></i> 上传中...';
+
+            // ----------------------------------------------------
+            // ✅ 核心修改：使用 fetch API 发送文件到后端
+            // ----------------------------------------------------
+            fetch('/api/upload-pdf', {
+                method: 'POST',
+                body: formData // 直接发送 FormData 对象，不需要设置 Content-Type
+            })
+            .then(response => response.json())
+            .then(data => {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+
+                if (data.success) {
+                    // 后端成功返回新创建的书籍信息 (包括 id 和后端生成的 file_path)
+                    const newBook = {
+                        id: data.book.id,
+                        title: data.book.title, 
+                        date: data.book.date,
+                        file_path: data.book.file_path, // 使用后端返回的实际文件名
+                        file_type: data.book.file_type, 
+                        cover_url: coverUrl,
+                        scroll_pos: 0 
+                    };
+                    
+                    pdfBooks.unshift(newBook);
+                    renderBooks();
+                    document.getElementById('upload-modal').classList.add('hidden');
+                    formElement.reset();
+                    saveToLocalStorage();
+                    alert(`文档《${newBook.title}》上传成功!`);
+                } else {
+                    alert(`上传失败: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+                console.error('上传过程中发生网络或服务器错误:', error);
+                alert('上传失败：网络或服务器连接错误。');
+            });
+        }
+        
         function renderBooks() {
             const shelf = document.querySelector('.book-shelf');
             shelf.innerHTML = '';
@@ -1081,16 +1443,41 @@
                  shelf.innerHTML = `
                     <div class="col-span-full text-center py-10">
                         <i class="fa fa-book text-4xl text-gray-300 mb-4"></i>
-                        <p class="text-gray-500">书架是空的，请上传您的第一本 PDF 文档。</p>
+                        <p class="text-gray-500">书架是空的，请上传您的第一本 PDF 或 TXT 文档。</p>
                     </div>
                 `;
                 return;
             }
             
             pdfBooks.forEach(book => {
+                // 安全初始化缺失属性
+                book.file_type = book.file_type || (book.file_path && book.file_path.endsWith('.txt') ? 'txt' : 'pdf'); 
+                book.scroll_pos = book.scroll_pos || 0;
+                
                 const bookElement = document.createElement('div');
                 bookElement.className = 'book bg-white rounded-lg overflow-hidden card-shadow cursor-pointer relative';
                 bookElement.setAttribute('data-id', book.id);
+                
+                const fileTypeDisplay = book.file_type ? book.file_type.toUpperCase() : 'PDF';
+
+                let coverContent;
+                if (book.cover_url) {
+                    // 用户上传了封面图
+                    const imageClass = book.cover_url.includes('svg') ? 'book-cover h-48 w-full object-cover p-10' : 'book-cover h-48 w-full object-cover';
+                    coverContent = `
+                        <div class="h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
+                            <img src="${book.cover_url}" alt="${book.title} 封面" class="${imageClass}">
+                        </div>
+                    `;
+                } else {
+                    // 使用文档标题作为文字封面
+                    coverContent = `
+                        <div class="h-48 bg-primary text-white p-4 flex items-center justify-center text-center font-bold text-lg leading-snug break-words" style="word-break: break-all;">
+                            ${book.title}
+                        </div>
+                    `;
+                }
+                
                 bookElement.innerHTML = `
                     <div class="absolute top-2 right-2 z-10">
                         <button class="delete-book bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition" 
@@ -1098,23 +1485,27 @@
                             <i class="fa fa-times text-xs"></i>
                         </button>
                     </div>
-                    <div class="h-48 bg-gray-200 flex items-center justify-center">
-                        <i class="fa fa-file-pdf-o text-5xl text-red-500"></i>
-                    </div>
+                    ${coverContent}
                     <div class="p-3">
                         <h3 class="font-bold truncate">${book.title}</h3>
-                        <p class="text-sm text-gray-500">${book.date || '未知日期'}</p>
+                        <p class="text-sm text-gray-500">类型: ${fileTypeDisplay}</p>
                     </div>
                 `;
                 
-                // 点击书籍打开PDF
-                bookElement.querySelector('.h-48').addEventListener('click', function() {
-                    openPdfReader(book.id);
+                bookElement.addEventListener('click', function(e) {
+                    if (e.target.closest('.delete-book')) {
+                        return;
+                    }
+                    if (book.file_type === 'pdf') {
+                        openPdfReader(book.id);
+                    } else if (book.file_type === 'txt') {
+                        openTxtReader(book.id);
+                    }
                 });
                 
                 // 删除按钮事件
                 bookElement.querySelector('.delete-book').addEventListener('click', function(e) {
-                    e.stopPropagation(); // 阻止事件冒泡
+                    e.stopPropagation(); 
                     if (confirm(`确定要删除文档《${book.title}》吗？`)) {
                         deleteBook(book.id);
                     }
@@ -1124,49 +1515,24 @@
             });
         }
 
-        // 删除书籍函数
         function deleteBook(bookId) {
-            // 模拟删除API调用
-            fetch(`/api/delete-pdf/${bookId}`, {
-                method: 'DELETE'
-            })
-            .then(response => response.json())
-            .then(data => {
-                // 假设服务器返回 success: true
-                if (data.success || true) {
-                    // 从本地列表中移除并重新渲染
-                    pdfBooks = pdfBooks.filter(book => book.id !== bookId);
-                    renderBooks();
-                    saveToLocalStorage();
-                } else {
-                    alert('删除失败：' + (data.error || '未知错误'));
-                }
-            })
-            .catch(error => {
-                // 即使网络错误，也允许用户删除本地数据（实际应用中需要更好的同步机制）
-                if (confirm('网络请求失败，是否强制从本地删除？')) {
-                    pdfBooks = pdfBooks.filter(book => book.id !== bookId);
-                    renderBooks();
-                    saveToLocalStorage();
-                } else {
-                    alert('删除失败：' + error.message);
-                }
-            });
+            if (confirm('模拟删除成功')) {
+                pdfBooks = pdfBooks.filter(book => book.id !== bookId);
+                renderBooks();
+                saveToLocalStorage();
+            }
         }
 
         function openPdfReader(bookId) {
-            // 获取DOM元素
             const pdfContainer = document.getElementById('pdf-container');
             const pdfTitle = document.getElementById('pdf-viewer-title');
             const pdfReader = document.getElementById('pdf-reader');
             const prevBtn = document.getElementById('pdf-prev-page');
             const nextBtn = document.getElementById('pdf-next-page');
             const pageInfo = document.getElementById('pdf-page-info');
-            const closeBtn = document.getElementById('close-pdf-reader');
             const shelfArea = document.querySelector('.book-shelf').parentElement;
             const scrollContainer = pdfContainer.parentElement;
 
-            // 显示阅读器，隐藏书架
             pdfReader.classList.remove('hidden');
             shelfArea.classList.add('hidden');
 
@@ -1175,15 +1541,17 @@
             
             pdfContainer.innerHTML = '<div class="text-center py-10"><i class="fa fa-spinner fa-spin text-4xl text-primary"></i><p class="mt-2">加载PDF中...</p></div>';
             
-            // 模拟或真实获取 PDF 文件（这里使用模拟数据或后端API）
-            // 注意：在没有后端的情况下，无法加载用户上传的PDF文件。这里假设通过API能获取到blob。
-            fetch(`/api/get-pdf/${bookId}`) 
+            // ✅ 关键修正：使用 book.file_path，并确保 URL 编码
+            const pdfFileName = book ? book.file_path : 'error.pdf';
+            const pdfFilePath = `/uploads/pdfs/${encodeURIComponent(pdfFileName)}`;
+
+            fetch(pdfFilePath) 
                 .then(response => {
-                    if (!response.ok) throw new Error(`HTTP错误：${response.status}`);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}. 请确认文件是否存在于 /uploads/pdfs/ 文件夹中。`);
                     return response.blob();
                 })
                 .then(blob => {
-                    if (blob.type !== 'application/pdf') throw new Error('返回的不是PDF文件');
+                    if (blob.type !== 'application/pdf') throw new Error('返回的文件不是PDF格式。');
                     const url = URL.createObjectURL(blob);
                     
                     const loadingTask = pdfjsLib.getDocument(url);
@@ -1192,13 +1560,10 @@
                         currentPdfPage = 1;
                         pdfDoc = pdf;
                         
-                        // 渲染第一页
                         renderPage(pdf, currentPdfPage);
                         pageInfo.textContent = `第 ${currentPdfPage} 页 / 共 ${pdf.numPages} 页`;
                         scrollContainer.scrollTop = 0;
 
-                        // 确保事件监听器只绑定一次
-                        // 这是一个常见的逻辑错误，需要先解绑后绑定，或者使用一个标志位
                         prevBtn.onclick = null;
                         nextBtn.onclick = null;
 
@@ -1223,7 +1588,6 @@
                         prevBtn.addEventListener('click', handlePrevPage);
                         nextBtn.addEventListener('click', handleNextPage);
                         
-                        // 键盘事件处理（只在 PDF 阅读器可见时生效）
                         function handleKeydown(e) {
                             if (!pdfReader.classList.contains('hidden')) {
                                 switch(e.key) {
@@ -1246,18 +1610,17 @@
                                 }
                             }
                         }
-                        // 每次打开阅读器时移除旧的键盘监听器，避免重复
+                        
                         document.removeEventListener('keydown', window._pdfKeydownHandler);
                         window._pdfKeydownHandler = handleKeydown;
                         document.addEventListener('keydown', window._pdfKeydownHandler);
                         
-                        // 渲染页面函数
                         function renderPage(pdf, pageNum) {
                             pdf.getPage(pageNum).then(page => {
                                 const containerWidth = pdfContainer.clientWidth;
-                                const viewport = page.getViewport({ scale: 1.5 }); // 默认缩放
-                                const scale = containerWidth / viewport.width; // 调整缩放比例以适应容器宽度
-                                const finalViewport = page.getViewport({ scale: scale * 0.95 }); // 留出一点边距
+                                const viewport = page.getViewport({ scale: 1.5 });
+                                const scale = containerWidth / viewport.width;
+                                const finalViewport = page.getViewport({ scale: scale * 0.95 });
                                 
                                 const canvas = document.createElement('canvas');
                                 const ctx = canvas.getContext('2d');
@@ -1274,45 +1637,335 @@
                         }
                         
                     }).catch(error => {
-                        pdfContainer.innerHTML = `<div class="text-center py-10 text-red-500"><i class="fa fa-exclamation-triangle text-4xl"></i><p class="mt-2">PDF解析失败：${error.message}</p></div>`;
+                        pdfContainer.innerHTML = `<div class="text-center py-10 text-red-500"><i class="fa fa-exclamation-triangle text-4xl"></i><p class="mt-2">PDF解析失败: ${error.message}</p></div>`;
                     });
                 })
                 .catch(error => {
-                    pdfContainer.innerHTML = `<div class="text-center py-10 text-red-500"><i class="fa fa-exclamation-triangle text-4xl"></i><p class="mt-2">加载失败：${error.message}</p></div>`;
+                    pdfContainer.innerHTML = `<div class="text-center py-10 text-red-500"><i class="fa fa-exclamation-triangle text-4xl"></i><p class="mt-2">文件加载失败 (后端路径: ${pdfFilePath}): ${error.message}</p></div>`;
+                });
+        }
+        
+        // TXT 阅读器逻辑
+        function openTxtReader(bookId) {
+            const txtReaderModal = document.getElementById('txt-reader-modal');
+            const txtTitle = document.getElementById('txt-viewer-title');
+            const txtContent = document.getElementById('txt-content');
+            const txtReader = document.getElementById('txt-reader');
+            const shelfArea = document.querySelector('.book-shelf').parentElement;
+            
+            const book = pdfBooks.find(b => b.id === bookId);
+            if (!book) return;
+
+            currentTxtBookId = bookId; // 设置当前阅读的书籍ID
+            txtTitle.textContent = book.title;
+            txtReaderModal.classList.remove('hidden');
+            shelfArea.classList.add('hidden');
+            
+            // 加载文本内容
+            const txtFilePath = `/uploads/pdfs/${encodeURIComponent(book.file_path)}`;
+            txtContent.textContent = '加载中...';
+            
+            fetch(txtFilePath)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP ${response.status}. 请确认文件是否存在于 /uploads/pdfs/ 文件夹中。`);
+                    return response.text();
+                })
+                .then(text => {
+                    txtContent.textContent = text;
+                    
+                    // 恢复阅读进度
+                    txtReader.scrollTop = book.scroll_pos || 0;
+                    updateTxtPageInfo();
+                    
+                    // 激活键盘事件
+                    document.removeEventListener('keydown', window._txtKeydownHandler);
+                    window._txtKeydownHandler = handleTxtKeydown;
+                    document.addEventListener('keydown', window._txtKeydownHandler);
+                })
+                .catch(error => {
+                    txtContent.textContent = `加载失败: ${error.message}`;
+                    console.error('TXT 加载失败:', error);
                 });
         }
 
-        // 初始化音乐播放器 - APlayer + 网易云歌单
-function initMusic() {
-    // 保存歌单ID到本地存储
-    document.getElementById('save-music-setting').addEventListener('click', function() {
-        const playlistId = document.getElementById('netease-playlist-id').value.trim();
-        if (playlistId && /^\d+$/.test(playlistId)) { // 验证是否为数字ID
-            localStorage.setItem('neteasePlaylistId', playlistId);
-            // 只需要更新本地存储，然后等待页面加载或刷新自动渲染标签
-            alert('歌单设置已保存，请刷新页面查看效果');
-        } else {
-            alert('请输入有效的网易云歌单ID（仅数字）');
-        }
-    });
-    
-    // 加载已保存的歌单ID并设置到输入框
-    const savedPlaylistId = localStorage.getItem('neteasePlaylistId') || '877029680'; 
-    document.getElementById('netease-playlist-id').value = savedPlaylistId;
-    
-    // **新增关键步骤：动态创建 meting-js 标签并插入到容器中**
-    renderMetingTag(savedPlaylistId);
-}
+        // 为编码选择框添加事件监听
+        document.getElementById('txt-display-encoding').addEventListener('change', function() {
+            if (currentTxtBookId) {
+                const book = pdfBooks.find(b => b.id === currentTxtBookId);
+                if (book) {
+                    reloadTxtWithEncoding(book, this.value);
+                }
+            }
+        });
 
-        // 新增渲染 MetingJS 标签的函数
-        function renderMetingTag(playlistId) {
+        // 重新加载TXT文件并使用指定编码
+        function reloadTxtWithEncoding(book, encoding) {
+            const txtFilePath = `/uploads/pdfs/${encodeURIComponent(book.file_path)}`;
+            const txtContent = document.getElementById('txt-content');
+            
+            txtContent.textContent = '加载中...';
+            
+            fetch(txtFilePath)
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return response.arrayBuffer(); // 获取原始二进制数据
+                })
+                .then(buffer => {
+                    // 使用TextDecoder解码指定编码
+                    const decoder = new TextDecoder(encoding);
+                    const text = decoder.decode(buffer);
+                    txtContent.textContent = text;
+                })
+                .catch(error => {
+                    txtContent.textContent = `加载失败: ${error.message}`;
+                    console.error('TXT 加载失败:', error);
+                });
+        }
+        
+        // 初始化 TXT 阅读器控制 (绑定事件)
+        function initTxtReader() {
+            const txtReader = document.getElementById('txt-reader');
+            const bgModeSelect = document.getElementById('bg-mode');
+            const prevBtn = document.getElementById('txt-prev-page');
+            const nextBtn = document.getElementById('txt-next-page');
+
+            // 监听背景切换
+            bgModeSelect.addEventListener('change', function() {
+                txtReader.classList.remove('bg-light-mode', 'bg-sepia-mode', 'bg-dark-mode');
+                txtReader.classList.add(`bg-${this.value}`);
+                
+                // 确保保存进度，因为背景变化可能导致内容高度微调
+                saveTxtPosition(); 
+                updateTxtPageInfo();
+            });
+            
+            // 初始化背景模式
+            bgModeSelect.value = 'light-mode';
+            txtReader.classList.add('bg-light-mode');
+
+            // 监听滚动事件，保存进度
+            txtReader.addEventListener('scroll', saveTxtPosition);
+            txtReader.addEventListener('scroll', updateTxtPageInfo); // 滚动时更新页码信息
+            
+            // 绑定翻页按钮
+            prevBtn.addEventListener('click', () => { scrollTxtPage(-1); });
+            nextBtn.addEventListener('click', () => { scrollTxtPage(1); });
+        }
+        
+        // 键盘翻页处理
+        function handleTxtKeydown(e) {
+            if (!document.getElementById('txt-reader-modal').classList.contains('hidden')) {
+                switch(e.key) {
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        scrollTxtPage(-1);
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        scrollTxtPage(1);
+                        break;
+                }
+            }
+        }
+
+        // 实际的滚动翻页逻辑
+        function scrollTxtPage(direction) {
+            const txtReader = document.getElementById('txt-reader');
+            // 滚动高度等于窗口高度，实现“翻页”效果
+            const scrollHeight = txtReader.clientHeight; 
+
+            txtReader.scrollBy({ top: scrollHeight * direction, behavior: 'smooth' });
+            
+            // 确保在滚动结束后更新页码信息
+            setTimeout(updateTxtPageInfo, 400); 
+        }
+        
+        // 保存阅读位置到 localstorage
+        function saveTxtPosition() {
+            if (currentTxtBookId) {
+                const book = pdfBooks.find(b => b.id === currentTxtBookId);
+                if (book) {
+                    book.scroll_pos = document.getElementById('txt-reader').scrollTop;
+                    saveToLocalStorage();
+                }
+            }
+        }
+        
+        // 更新页码信息（基于滚动位置的百分比）
+        function updateTxtPageInfo() {
+            const txtReader = document.getElementById('txt-reader');
+            const pageInfo = document.getElementById('txt-page-info');
+
+            const scrollMax = txtReader.scrollHeight - txtReader.clientHeight;
+            const scrollPercent = scrollMax > 0 ? (txtReader.scrollTop / scrollMax) : 0;
+            
+            // 简化页数计算：总高度 / 窗口高度 (如果内容溢出，则至少为 1)
+            const totalPages = Math.max(1, Math.ceil(txtReader.scrollHeight / txtReader.clientHeight));
+            
+            // 估计当前页码
+            let currentPage = 1;
+            if (totalPages > 1) {
+                // 将滚动位置映射到页码
+                currentPage = Math.min(totalPages, Math.floor(txtReader.scrollTop / (txtReader.clientHeight)) + 1);
+            }
+
+            pageInfo.textContent = `第 ${currentPage} 页 / 共 ${totalPages} 页 (${(scrollPercent * 100).toFixed(0)}%)`;
+        }
+
+        // ----------------------------------------------------
+        // 书签逻辑
+        // ----------------------------------------------------
+        // 初始化书签时从后端加载
+        function initBookmarks() {
+            // 先从后端获取书签
+            fetch('/api/bookmarks')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.bookmarks) {
+                        bookmarks = data.bookmarks;
+                        renderBookmarks();
+                    }
+                })
+                .catch(error => {
+                    console.error('加载书签失败，使用本地存储数据:', error);
+                    // 失败时 fallback 到本地存储
+                    const localData = localStorage.getItem('workspaceData');
+                    if (localData) {
+                        bookmarks = JSON.parse(localData).bookmarks || [];
+                        renderBookmarks();
+                    }
+                });
+
+            document.getElementById('add-bookmark').addEventListener('click', addBookmark);
+        }
+
+        // 添加书签时同步到后端
+        function addBookmark() {
+            const titleInput = document.getElementById('bookmark-title');
+            const urlInput = document.getElementById('bookmark-url');
+            
+            const title = titleInput.value.trim();
+            let url = urlInput.value.trim();
+            
+            if (!title || !url) {
+                alert('标题和网址不能为空。');
+                return;
+            }
+
+            if (!/^https?:\/\//i.test(url)) {
+                url = 'http://' + url;
+            }
+
+            // 发送到后端
+            fetch('/api/bookmarks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title, url })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    bookmarks.push(data.bookmark);
+                    renderBookmarks();
+                    saveToLocalStorage(); // 同时更新本地存储
+                    titleInput.value = '';
+                    urlInput.value = '';
+                } else {
+                    alert('添加失败: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('添加书签失败:', error);
+                alert('网络错误，添加失败');
+            });
+        }
+
+        // 删除书签时同步到后端
+        function deleteBookmark(id) {
+            fetch(`/api/bookmarks/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    bookmarks = bookmarks.filter(b => b.id !== id);
+                    renderBookmarks();
+                    saveToLocalStorage(); // 同时更新本地存储
+                } else {
+                    alert('删除失败: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('删除书签失败:', error);
+                alert('网络错误，删除失败');
+            });
+        }
+        
+        function renderBookmarks() {
+            const container = document.getElementById('bookmarks-list');
+            container.innerHTML = '';
+            
+            if (bookmarks.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-center py-4 col-span-full">暂无书签</div>';
+                return;
+            }
+            
+            bookmarks.forEach(b => {
+                const item = document.createElement('div');
+                item.className = 'bg-white border rounded-lg p-4 shadow flex justify-between items-center';
+                item.innerHTML = `
+                    <div>
+                        <a href="${b.url}" target="_blank" class="font-bold text-primary hover:underline">${b.title}</a>
+                    </div>
+                    <button class="text-red-500 hover:text-red-700 ml-3" onclick="deleteBookmark(${b.id})">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+
+        // ----------------------------------------------------
+        // 其它辅助逻辑
+        // ----------------------------------------------------
+        
+        function initMusic() {
+            const playlistIdInput = document.getElementById('netease-playlist-id');
+            const orderSelect = document.getElementById('music-order'); 
+            
+            const savedPlaylistId = localStorage.getItem('neteasePlaylistId') || '877029680'; 
+            const savedOrder = localStorage.getItem('musicOrder') || 'list'; 
+            
+            playlistIdInput.value = savedPlaylistId;
+            orderSelect.value = savedOrder; 
+
+            document.getElementById('save-music-setting').addEventListener('click', function() {
+                const playlistId = playlistIdInput.value.trim();
+                const order = orderSelect.value;
+                
+                if (playlistId && /^\d+$/.test(playlistId)) {
+                    localStorage.setItem('neteasePlaylistId', playlistId);
+                    localStorage.setItem('musicOrder', order);
+                    
+                    renderMetingTag(playlistId, order);
+                    alert('歌单和播放模式设置已保存，已更新播放器');
+                } else {
+                    alert('请输入有效的网易云歌单ID（仅数字）');
+                }
+            });
+            
+            renderMetingTag(savedPlaylistId, savedOrder);
+        }
+
+        function renderMetingTag(playlistId, order = 'list') {
             const playerContainer = document.getElementById('music-player');
             if (!playerContainer) return;
             
-            // 清除旧内容
             playerContainer.innerHTML = '';
             
-            // 创建 meting-js 标签并设置属性 (MetingJS v2.0.1 会自动解析并初始化)
             const metingTag = document.createElement('meting-js');
             metingTag.setAttribute('server', 'netease');
             metingTag.setAttribute('type', 'playlist');
@@ -1320,7 +1973,7 @@ function initMusic() {
             metingTag.setAttribute('fixed', 'false');
             metingTag.setAttribute('autoplay', 'false');
             metingTag.setAttribute('loop', 'all');
-            metingTag.setAttribute('order', 'list');
+            metingTag.setAttribute('order', order);
             metingTag.setAttribute('preload', 'auto');
             metingTag.setAttribute('volume', '0.7');
             metingTag.setAttribute('theme', '#3B82F6');
@@ -1330,25 +1983,18 @@ function initMusic() {
             
             playerContainer.appendChild(metingTag);
         }
-
         
-        // 初始化游戏 - 调整了大小适配屏幕
         function initGames() {
-            // 游戏选择器
             const gameSelectors = document.querySelectorAll('.game-selector');
             gameSelectors.forEach(selector => {
                 selector.addEventListener('click', function() {
-                    // 移除所有活动状态
                     gameSelectors.forEach(s => {
                         s.classList.remove('active', 'bg-primary', 'text-white');
                         s.classList.add('bg-gray-200', 'hover:bg-gray-300');
                     });
-                    
-                    // 设置当前选择器为活动状态
                     this.classList.add('active', 'bg-primary', 'text-white');
                     this.classList.remove('bg-gray-200', 'hover:bg-gray-300');
                     
-                    // 显示对应的游戏
                     const gameId = this.getAttribute('data-game');
                     document.querySelectorAll('.game-content').forEach(content => {
                         content.classList.add('hidden');
@@ -1357,33 +2003,26 @@ function initMusic() {
                 });
             });
             
-            // 初始化1024游戏 - 适配屏幕大小
             initGame1024();
-            
-            // 初始化五子棋 - 适配屏幕大小
             initGomoku();
             
-            // 上传游戏按钮
             document.getElementById('upload-game-btn').addEventListener('click', function() {
                 alert('在实际应用中，这里将打开游戏上传界面');
             });
         }
         
-        // 初始化1024游戏 - 调整大小
         function initGame1024() {
             const gridSize = 4;
             let grid = [];
             let score = 0;
             const gridElement = document.getElementById('grid-1024');
             
-            // 根据屏幕大小设置合适的格子尺寸
             function setGridSize() {
                 const containerWidth = gridElement.parentElement.clientWidth;
-                const cellSize = Math.floor((containerWidth - 30) / gridSize); // 减去间距
+                const cellSize = Math.floor((containerWidth - 30) / gridSize);
                 gridElement.style.gridTemplateColumns = `repeat(${gridSize}, ${cellSize}px)`;
             }
             
-            // 初始化网格
             function initializeGrid() {
                 grid = Array(gridSize).fill().map(() => Array(gridSize).fill(0));
                 score = 0;
@@ -1391,13 +2030,11 @@ function initMusic() {
                 addNewTile();
                 renderGrid();
                 updateScore();
-                setGridSize(); // 设置网格大小
+                setGridSize();
             }
             
-            // 添加新方块
             function addNewTile() {
                 const emptyTiles = [];
-                
                 for (let i = 0; i < gridSize; i++) {
                     for (let j = 0; j < gridSize; j++) {
                         if (grid[i][j] === 0) {
@@ -1405,17 +2042,14 @@ function initMusic() {
                         }
                     }
                 }
-                
                 if (emptyTiles.length > 0) {
                     const {i, j} = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
                     grid[i][j] = Math.random() < 0.9 ? 2 : 4;
                 }
             }
             
-            // 渲染网格
             function renderGrid() {
                 gridElement.innerHTML = '';
-                
                 for (let i = 0; i < gridSize; i++) {
                     for (let j = 0; j < gridSize; j++) {
                         const value = grid[i][j];
@@ -1427,37 +2061,32 @@ function initMusic() {
                 }
             }
             
-            // 获取方块样式类
             function getTileClass(value) {
                 const classes = {
-                    0: 'bg-gray-100 border-gray-200',  // 空白格更浅，边框区分
-                    2: 'bg-amber-50 text-amber-900 font-bold text-2xl',  // 浅橙底+深橙字
+                    0: 'bg-gray-100 border-gray-200',
+                    2: 'bg-amber-50 text-amber-900 font-bold text-2xl',
                     4: 'bg-amber-100 text-amber-900 font-bold text-2xl',
                     8: 'bg-orange-100 text-orange-900 font-bold text-2xl',
                     16: 'bg-orange-200 text-orange-900 font-bold text-2xl',
-                    32: 'bg-orange-300 text-white font-bold text-2xl',  // 从32开始用白色字
+                    32: 'bg-orange-300 text-white font-bold text-2xl',
                     64: 'bg-orange-400 text-white font-bold text-2xl',
-                    128: 'bg-yellow-200 text-yellow-900 font-bold text-3xl',  // 增大字号
+                    128: 'bg-yellow-200 text-yellow-900 font-bold text-3xl',
                     256: 'bg-yellow-300 text-yellow-900 font-bold text-3xl',
                     512: 'bg-yellow-400 text-white font-bold text-3xl',
-                    1024: 'bg-yellow-500 text-white font-bold text-4xl',  // 超大字号突出
+                    1024: 'bg-yellow-500 text-white font-bold text-4xl',
                     2048: 'bg-yellow-600 text-white font-bold text-4xl'
                 };
-                
                 return classes[value] || 'bg-red-500 text-white text-2xl';
             }
             
-            // 更新分数
             function updateScore() {
                 document.getElementById('score-1024').textContent = score;
             }
             
-            // 移动方块
             function move(direction) {
                 let moved = false;
                 let merged = Array(gridSize).fill().map(() => Array(gridSize).fill(false));
                 
-                // 根据方向处理移动
                 switch(direction) {
                     case 'up':
                         for (let j = 0; j < gridSize; j++) {
@@ -1470,7 +2099,6 @@ function initMusic() {
                                         row--;
                                         moved = true;
                                     }
-                                    
                                     if (row > 0 && grid[row - 1][j] === grid[row][j] && !merged[row - 1][j]) {
                                         grid[row - 1][j] *= 2;
                                         score += grid[row - 1][j];
@@ -1482,7 +2110,6 @@ function initMusic() {
                             }
                         }
                         break;
-                        
                     case 'down':
                         for (let j = 0; j < gridSize; j++) {
                             for (let i = gridSize - 2; i >= 0; i--) {
@@ -1494,7 +2121,6 @@ function initMusic() {
                                         row++;
                                         moved = true;
                                     }
-                                    
                                     if (row < gridSize - 1 && grid[row + 1][j] === grid[row][j] && !merged[row + 1][j]) {
                                         grid[row + 1][j] *= 2;
                                         score += grid[row + 1][j];
@@ -1506,7 +2132,6 @@ function initMusic() {
                             }
                         }
                         break;
-                        
                     case 'left':
                         for (let i = 0; i < gridSize; i++) {
                             for (let j = 1; j < gridSize; j++) {
@@ -1518,7 +2143,6 @@ function initMusic() {
                                         col--;
                                         moved = true;
                                     }
-                                    
                                     if (col > 0 && grid[i][col - 1] === grid[i][col] && !merged[i][col - 1]) {
                                         grid[i][col - 1] *= 2;
                                         score += grid[i][col - 1];
@@ -1530,7 +2154,6 @@ function initMusic() {
                             }
                         }
                         break;
-                        
                     case 'right':
                         for (let i = 0; i < gridSize; i++) {
                             for (let j = gridSize - 2; j >= 0; j--) {
@@ -1542,7 +2165,6 @@ function initMusic() {
                                         col++;
                                         moved = true;
                                     }
-                                    
                                     if (col < gridSize - 1 && grid[i][col + 1] === grid[i][col] && !merged[i][col + 1]) {
                                         grid[i][col + 1] *= 2;
                                         score += grid[i][col + 1];
@@ -1555,14 +2177,10 @@ function initMusic() {
                         }
                         break;
                 }
-                
-                // 如果有移动，添加新方块并重新渲染
                 if (moved) {
                     addNewTile();
                     renderGrid();
                     updateScore();
-                    
-                    // 检查游戏结束
                     if (isGameOver()) {
                         setTimeout(() => {
                             alert(`游戏结束！您的得分是: ${score}`);
@@ -1571,9 +2189,7 @@ function initMusic() {
                 }
             }
             
-            // 检查游戏是否结束
             function isGameOver() {
-                // 检查是否有空位
                 for (let i = 0; i < gridSize; i++) {
                     for (let j = 0; j < gridSize; j++) {
                         if (grid[i][j] === 0) {
@@ -1581,28 +2197,21 @@ function initMusic() {
                         }
                     }
                 }
-                
-                // 检查是否有可合并的方块
                 for (let i = 0; i < gridSize; i++) {
                     for (let j = 0; j < gridSize; j++) {
-                        if (
-                            (i < gridSize - 1 && grid[i][j] === grid[i + 1][j]) ||
-                            (j < gridSize - 1 && grid[i][j] === grid[i][j + 1])
-                        ) {
+                        if ((i < gridSize - 1 && grid[i][j] === grid[i + 1][j]) ||
+                            (j < gridSize - 1 && grid[i][j] === grid[i][j + 1])) {
                             return false;
                         }
                     }
                 }
-                
                 return true;
             }
             
-            // 事件监听：键盘方向键
             document.addEventListener('keydown', function(e) {
                 if (document.getElementById('game-1024').classList.contains('hidden')) {
                     return;
                 }
-                
                 switch(e.key) {
                     case 'ArrowUp':
                         e.preventDefault();
@@ -1623,44 +2232,34 @@ function initMusic() {
                 }
             });
             
-            // 响应式调整
             window.addEventListener('resize', setGridSize);
-            
-            // 重新开始按钮
             document.getElementById('restart-1024').addEventListener('click', initializeGrid);
-            
-            // 初始化游戏
             initializeGrid();
         }
         
-        // 初始化五子棋 - 调整大小
         function initGomoku() {
             const boardSize = 15;
-            let board = Array(boardSize).fill().map(() => Array(boardSize).fill(0)); // 0:空, 1:黑, 2:白
-            let currentPlayer = 1; // 1:黑, 2:白
+            let board = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
+            let currentPlayer = 1;
             const boardElement = document.getElementById('gomoku-board');
             
-            // 根据屏幕大小设置合适的棋盘尺寸
             function setBoardSize() {
                 const containerWidth = boardElement.parentElement.clientWidth;
-                const cellSize = Math.floor((containerWidth - 28) / boardSize); // 减去间距
+                const cellSize = Math.floor((containerWidth - 28) / boardSize);
                 boardElement.style.maxWidth = `${cellSize * boardSize + 28}px`;
                 boardElement.style.margin = '0 auto';
             }
             
-            // 初始化棋盘
             function initializeBoard() {
                 board = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
                 currentPlayer = 1;
                 renderBoard();
                 updateCurrentPlayer();
-                setBoardSize(); // 设置棋盘大小
+                setBoardSize();
             }
             
-            // 渲染棋盘
             function renderBoard() {
                 boardElement.innerHTML = '';
-                
                 for (let i = 0; i < boardSize; i++) {
                     for (let j = 0; j < boardSize; j++) {
                         const cell = document.createElement('div');
@@ -1668,55 +2267,37 @@ function initMusic() {
                         cell.setAttribute('data-row', i);
                         cell.setAttribute('data-col', j);
                         
-                        // 添加棋子
                         if (board[i][j] === 1) {
                             cell.innerHTML = '<div class="stone black"></div>';
                         } else if (board[i][j] === 2) {
                             cell.innerHTML = '<div class="stone white"></div>';
                         }
-                        
-                        // 添加点击事件
                         cell.addEventListener('click', placeStone);
-                        
                         boardElement.appendChild(cell);
                     }
                 }
             }
             
-            // 更新当前玩家显示
             function updateCurrentPlayer() {
-                // 找到当前回合的提示元素
-                const currentPlayerDisplay = document.getElementById('current-player');
-                const stoneDisplay = currentPlayerDisplay.previousElementSibling;
-                
-                currentPlayerDisplay.textContent = currentPlayer === 1 ? '黑方' : '白方';
-                
-                if (stoneDisplay.classList.contains('stone')) {
+                document.getElementById('current-player').textContent = currentPlayer === 1 ? '黑方' : '白方';
+                const stoneDisplay = document.querySelector('#gomoku .stone');
+                if (stoneDisplay) {
                     stoneDisplay.classList.remove('black', 'white');
                     stoneDisplay.classList.add(currentPlayer === 1 ? 'black' : 'white');
-                } else {
-                    // 如果元素不存在或不是棋子，动态创建
-                    if (!stoneDisplay.querySelector('.stone')) {
-                        stoneDisplay.innerHTML = `<div class="stone ${currentPlayer === 1 ? 'black' : 'white'} inline-block mr-2"></div>`;
-                    }
                 }
             }
             
-            // 落子
             function placeStone(e) {
                 const row = parseInt(e.currentTarget.getAttribute('data-row'));
                 const col = parseInt(e.currentTarget.getAttribute('data-col'));
                 
-                // 检查是否可以落子
                 if (board[row][col] !== 0) {
                     return;
                 }
                 
-                // 落子
                 board[row][col] = currentPlayer;
                 renderBoard();
                 
-                // 检查是否获胜
                 if (checkWin(row, col)) {
                     setTimeout(() => {
                         alert(`${currentPlayer === 1 ? '黑方' : '白方'}获胜！`);
@@ -1725,78 +2306,52 @@ function initMusic() {
                     return;
                 }
                 
-                // 切换玩家
                 currentPlayer = currentPlayer === 1 ? 2 : 1;
                 updateCurrentPlayer();
             }
             
-            // 检查是否获胜
             function checkWin(row, col) {
                 const player = board[row][col];
-                const directions = [
-                    [0, 1],   // 水平
-                    [1, 0],   // 垂直
-                    [1, 1],   // 对角线
-                    [1, -1]   // 反对角线
-                ];
+                const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
                 
                 for (const [dx, dy] of directions) {
-                    let count = 1; // 当前位置已有一个棋子
+                    let count = 1;
                     
-                    // 正向检查
                     for (let i = 1; i <= 4; i++) {
                         const newRow = row + i * dx;
                         const newCol = col + i * dy;
                         
-                        if (
-                            newRow >= 0 && newRow < boardSize &&
-                            newCol >= 0 && newCol < boardSize &&
-                            board[newRow][newCol] === player
-                        ) {
+                        if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize && board[newRow][newCol] === player) {
                             count++;
                         } else {
                             break;
                         }
                     }
                     
-                    // 反向检查
                     for (let i = 1; i <= 4; i++) {
                         const newRow = row - i * dx;
                         const newCol = col - i * dy;
                         
-                        if (
-                            newRow >= 0 && newRow < boardSize &&
-                            newCol >= 0 && newCol < boardSize &&
-                            board[newRow][newCol] === player
-                        ) {
+                        if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize && board[newRow][newCol] === player) {
                             count++;
                         } else {
                             break;
                         }
                     }
                     
-                    // 五子连珠
                     if (count >= 5) {
                         return true;
                     }
                 }
-                
                 return false;
             }
             
-            // 响应式调整
             window.addEventListener('resize', setBoardSize);
-            
-            // 重新开始按钮
             document.getElementById('restart-gomoku').addEventListener('click', initializeBoard);
-            
-            // 初始化棋盘
             initializeBoard();
         }
         
-        // 初始化备忘录 - 修复了图片插入问题
         function initNotes() {
-            // 新建备忘录
             document.getElementById('create-note-btn').addEventListener('click', function() {
                 currentNoteId = null;
                 document.getElementById('note-title').value = '';
@@ -1804,16 +2359,14 @@ function initMusic() {
                 document.getElementById('notes-list').classList.add('hidden');
                 document.getElementById('note-editor').classList.remove('hidden');
                 document.getElementById('note-title').focus();
-                document.getElementById('delete-note-btn').classList.add('hidden'); // 新建时隐藏删除按钮
+                document.getElementById('delete-note-btn').classList.add('hidden');
             });
             
-            // 关闭备忘录编辑
             document.getElementById('close-note-btn').addEventListener('click', function() {
                 document.getElementById('note-editor').classList.add('hidden');
                 document.getElementById('notes-list').classList.remove('hidden');
             });
             
-            // 删除备忘录
             document.getElementById('delete-note-btn').addEventListener('click', function() {
                 if (currentNoteId && confirm('确定要删除这篇备忘录吗？')) {
                     notes = notes.filter(note => note.id !== currentNoteId);
@@ -1825,10 +2378,8 @@ function initMusic() {
                 }
             });
             
-            // 保存备忘录
             document.getElementById('save-note-btn').addEventListener('click', saveNote);
             
-            // 编辑器格式化工具
             document.getElementById('format-bold').addEventListener('click', function() {
                 document.execCommand('bold', false, null);
                 document.getElementById('note-content').focus();
@@ -1867,75 +2418,58 @@ function initMusic() {
                 document.getElementById('note-content').focus();
             });
             
-            // 插入图片 - 修复了图片插入功能
             document.getElementById('insert-image').addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (file && file.type.startsWith('image/')) {
                     const reader = new FileReader();
                     
                     reader.onload = function(event) {
-                        // 创建图片元素
                         const img = document.createElement('img');
                         img.src = event.target.result;
-                        img.className = 'max-w-full h-auto my-2'; // 确保图片适应容器
+                        img.className = 'max-w-full h-auto my-2';
                         
-                        // 在光标位置插入图片
                         const selection = window.getSelection();
                         if (selection.rangeCount) {
                             const range = selection.getRangeAt(0);
                             range.deleteContents();
                             range.insertNode(img);
                             
-                            // 移动光标到图片后面
                             range.setStartAfter(img);
                             range.setEndAfter(img);
                             selection.removeAllRanges();
                             selection.addRange(range);
                         } else {
-                            // 如果没有选中区域，直接添加到内容末尾
                             document.getElementById('note-content').appendChild(img);
                         }
                     };
                     
                     reader.readAsDataURL(file);
                 }
-                
-                // 重置文件输入，允许重复选择同一文件
                 this.value = '';
                 document.getElementById('note-content').focus();
             });
             
-            // 快捷键支持
             document.addEventListener('keydown', function(e) {
-                // Ctrl+S 保存
                 if (e.ctrlKey && e.key === 's') {
                     e.preventDefault();
                     if (!document.getElementById('note-editor').classList.contains('hidden')) {
                         saveNote();
                     }
-                }
-                // Ctrl+B 粗体
-                else if (e.ctrlKey && e.key === 'b') {
+                } else if (e.ctrlKey && e.key === 'b') {
                     e.preventDefault();
                     document.execCommand('bold', false, null);
-                }
-                // Ctrl+I 斜体
-                else if (e.ctrlKey && e.key === 'i') {
+                } else if (e.ctrlKey && e.key === 'i') {
                     e.preventDefault();
                     document.execCommand('italic', false, null);
-                }
-                // Ctrl+U 下划线
-                else if (e.ctrlKey && e.key === 'u') {
+                } else if (e.ctrlKey && e.key === 'u') {
                     e.preventDefault();
                     document.execCommand('underline', false, null);
                 }
             });
             
-            // 渲染备忘录列表
             renderNotes();
         }
         
-        // 保存备忘录
         function saveNote() {
             const title = document.getElementById('note-title').value.trim();
             const content = document.getElementById('note-content').innerHTML.trim();
@@ -1950,7 +2484,6 @@ function initMusic() {
             const timeString = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
             
             if (currentNoteId) {
-                // 更新现有备忘录
                 const index = notes.findIndex(note => note.id === currentNoteId);
                 if (index !== -1) {
                     notes[index].title = title;
@@ -1958,7 +2491,6 @@ function initMusic() {
                     notes[index].last_edited = timeString;
                 }
             } else {
-                // 创建新备忘录
                 const newNote = {
                     id: Date.now(),
                     title: title,
@@ -1969,11 +2501,9 @@ function initMusic() {
                 currentNoteId = newNote.id;
             }
             
-            // 重新渲染列表并更新统计
             renderNotes();
             updateTodayStats();
             
-            // 显示保存成功提示
             const saveButton = document.getElementById('save-note-btn');
             const originalText = saveButton.innerHTML;
             saveButton.innerHTML = '<i class="fa fa-check mr-1"></i> 已保存';
@@ -1982,11 +2512,9 @@ function initMusic() {
                 saveButton.innerHTML = originalText;
             }, 2000);
             
-            // 保存到本地存储
             saveToLocalStorage();
         }
         
-        // 渲染备忘录列表
         function renderNotes() {
             const container = document.getElementById('notes-list');
             container.innerHTML = '';
@@ -2001,17 +2529,13 @@ function initMusic() {
                         </button>
                     </div>
                 `;
-                
-                // 绑定创建第一条备忘录事件
                 document.getElementById('create-first-note').addEventListener('click', function() {
                     document.getElementById('create-note-btn').click();
                 });
-                
                 return;
             }
             
             notes.forEach(note => {
-                // 提取纯文本内容用于预览
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = note.content;
                 const plainText = tempDiv.textContent || '';
@@ -2027,7 +2551,6 @@ function initMusic() {
                     </div>
                 `;
                 
-                // 点击打开备忘录
                 noteElement.addEventListener('click', function() {
                     const noteId = parseInt(this.getAttribute('data-id'));
                     const note = notes.find(n => n.id === noteId);
@@ -2038,7 +2561,7 @@ function initMusic() {
                         document.getElementById('note-content').innerHTML = note.content;
                         document.getElementById('notes-list').classList.add('hidden');
                         document.getElementById('note-editor').classList.remove('hidden');
-                        document.getElementById('delete-note-btn').classList.remove('hidden'); // 编辑时显示删除按钮
+                        document.getElementById('delete-note-btn').classList.remove('hidden');
                     }
                 });
                 
@@ -2046,9 +2569,7 @@ function initMusic() {
             });
         }
 
-        // 初始化对话界面 - 接入Qwen API
         function initChat() {
-            // 保存API密钥（适配你的input和按钮ID）
             document.getElementById('save-api-key').addEventListener('click', function() {
                 const apiKey = document.getElementById('qwen-api-key').value;
                 if (apiKey) {
@@ -2059,21 +2580,17 @@ function initMusic() {
                 }
             });
             
-            // 加载已保存的API密钥
             const savedApiKey = localStorage.getItem('qwenApiKey');
             if (savedApiKey) {
                 document.getElementById('qwen-api-key').value = savedApiKey;
             }
             
-            // ✅ 修复点 3：移除此处对 #open-chat 冗余的监听代码
-
-            // 提交对话 - 适配你的表单和状态提示元素
             document.getElementById('chat-form').addEventListener('submit', function(e) {
-                e.preventDefault(); // 关键：阻止页面刷新
+                e.preventDefault();
                 const input = document.getElementById('chat-input');
                 const message = input.value.trim();
                 const apiKey = document.getElementById('qwen-api-key').value;
-                const statusElement = document.getElementById('chat-status'); // 你的状态提示元素
+                const statusElement = document.getElementById('chat-status');
                 
                 if (!message) return;
                 if (!apiKey) {
@@ -2081,37 +2598,29 @@ function initMusic() {
                     return;
                 }
                 
-                // 添加用户消息到界面
                 addChatMessage(message, 'user');
                 input.value = '';
                 
-                // 显示加载状态
                 statusElement.classList.remove('hidden');
                 const messagesContainer = document.getElementById('chat-messages');
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 
-                // 调用后端接口（注意：这里仍是模拟调用）
                 callQwenApi(message, apiKey)
                 .then(response => {
-                    // 隐藏加载状态
                     statusElement.classList.add('hidden');
-                    // 显示AI回复
                     addChatMessage(response, 'ai');
                 })
                 .catch(error => {
-                    // 隐藏加载状态并显示错误
                     statusElement.classList.add('hidden');
                     addChatMessage(`对话失败: ${error.message}`, 'ai');
                 });
             });
         }
 
-        // 模拟 Qwen API 调用函数
         function callQwenApi(message, apiKey) {
             return new Promise((resolve, reject) => {
-                // 模拟网络延迟
                 setTimeout(() => {
-                    if (apiKey === 'VALID_KEY') { // 模拟验证
+                    if (apiKey === 'VALID_KEY') {
                         resolve(`这是AI对您问题"${message}"的回答。在实际应用中，这里将显示真实的API返回结果。`);
                     } else if (apiKey === 'ERROR_KEY') {
                         reject(new Error('API 密钥验证失败，请检查您的密钥。'));
@@ -2122,7 +2631,6 @@ function initMusic() {
             });
         }
         
-        // 添加聊天消息
         function addChatMessage(content, sender) {
             const messagesContainer = document.getElementById('chat-messages');
             
@@ -2153,12 +2661,10 @@ function initMusic() {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
         
-        // 更新今日统计
         function updateTodayStats() {
             const today = new Date().toISOString().split('T')[0];
             const todayRecords = workRecords.filter(record => record.date === today);
             
-            // 计算今日工作时间
             let totalWorkHours = 0;
             todayRecords.forEach(record => {
                 totalWorkHours += record.hours;
@@ -2170,71 +2676,79 @@ function initMusic() {
             document.getElementById('today-worked').textContent = 
                 `${workHours}小时${workMinutes}分钟`;
                 
-            // 计算今日阅读文档数
-            // 目前没有阅读记录机制，保持为 0
             document.getElementById('today-read').textContent = "0篇";
             
-            // 计算今日创建的备忘录数
             const todayNotes = notes.filter(note => note.last_edited.startsWith(today));
             document.getElementById('today-notes').textContent = `${todayNotes.length}篇`;
         }
         
-        // 保存数据到本地存储
         function saveToLocalStorage() {
             const data = {
+                workGoalTime: workGoalTime,
                 remainingTime: remainingTime,
                 isTimerRunning: isTimerRunning,
                 workRecords: workRecords,
                 pdfBooks: pdfBooks,
-                notes: notes
+                notes: notes,
+                bookmarks: bookmarks
             };
             
             localStorage.setItem('workspaceData', JSON.stringify(data));
         }
         
-        // 从本地存储加载数据
         function loadFromLocalStorage() {
             const data = localStorage.getItem('workspaceData');
             if (data) {
                 try {
                     const parsedData = JSON.parse(data);
                     
-                    remainingTime = parsedData.remainingTime || 7 * 60 * 60;
+                    workGoalTime = parsedData.workGoalTime || 7 * 60 * 60;
+                    remainingTime = parsedData.remainingTime || workGoalTime;
                     isTimerRunning = parsedData.isTimerRunning || false;
                     workRecords = parsedData.workRecords || [];
-                    pdfBooks = parsedData.pdfBooks || [];
-                    notes = parsedData.notes || [];
+                    bookmarks = parsedData.bookmarks || [];
                     
-                    // 更新显示
-                    updateTimerDisplay();
-                    updateEndTime();
+                    // 修复：确保加载时旧的 book 数据具有 file_type 和 scroll_pos 属性
+                    pdfBooks = (parsedData.pdfBooks || []).map(book => ({
+                        ...book,
+                        // 尝试根据路径推断 file_type，否则默认为 pdf
+                        file_type: book.file_type || (book.file_path && book.file_path.endsWith('.txt') ? 'txt' : 'pdf'),
+                        scroll_pos: book.scroll_pos || 0,
+                    }));
+                    
+                    notes = parsedData.notes || [];
+
+                    const hours = workGoalTime / 3600;
+                    document.getElementById('work-hours').value = hours;
+                    document.getElementById('timer-page-hours').value = hours;
+                    
+                    updateRemainingTime();
                     renderWorkRecords();
                     renderBooks();
                     renderNotes();
+                    renderBookmarks();
                     updateTodayStats();
                     
-                    // 如果计时器正在运行，继续计时
                     if (isTimerRunning) {
                         startTimer();
                     }
                 } catch (error) {
                     console.error('加载本地存储数据失败:', error);
-                    // 可以选择重置数据或忽略错误
                 }
+            } else {
+                updateRemainingTime();
             }
         }
         
-        // 初始化页面
-        // 修改初始化调用逻辑，等待所有资源加载完成
         window.addEventListener('load', function() {
-            // 等所有外部库加载完成后再初始化
             initNavigation();
             initTimer();
             initBooks();
-            initMusic(); // 确保 MetingJs 依赖正确加载
+            initMusic();
             initGames();
             initNotes();
             initChat();
+            initBookmarks();
             loadFromLocalStorage();
         });
         
