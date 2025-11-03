@@ -8,8 +8,22 @@
  * Restarting with stat
  * Debugger is active!
  * Debugger PIN: 458-095-237
-127.0.0.1 - - [03/Nov/2025 22:48:45] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [03/Nov/2025 22:48:45] "[36mGET /static/icons/file-earmark-pdf.svg HTTP/1.1[0m" 304 -
-127.0.0.1 - - [03/Nov/2025 22:48:47] "GET /api/get-pdfs HTTP/1.1" 200 -
-127.0.0.1 - - [03/Nov/2025 22:48:47] "GET /api/bookmarks HTTP/1.1" 200 -
-127.0.0.1 - - [03/Nov/2025 22:48:47] "GET /api/conversations HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 23:28:06] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 23:28:06] "[36mGET /static/icons/file-earmark-pdf.svg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [03/Nov/2025 23:28:06] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+127.0.0.1 - - [03/Nov/2025 23:28:08] "GET /api/get-pdfs HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 23:28:08] "GET /api/notes HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 23:28:08] "GET /api/bookmarks HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 23:28:08] "GET /api/work-records HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 23:28:08] "GET /api/conversations HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 23:28:16] "POST /api/work-records HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 23:28:20] "POST /api/work-records HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 23:28:34] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 23:28:34] "[36mGET /static/icons/file-earmark-pdf.svg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [03/Nov/2025 23:28:34] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+127.0.0.1 - - [03/Nov/2025 23:28:36] "GET /api/get-pdfs HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 23:28:36] "GET /api/notes HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 23:28:36] "GET /api/work-records HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 23:28:36] "GET /api/bookmarks HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 23:28:36] "GET /api/conversations HTTP/1.1" 200 -
+127.0.0.1 - - [03/Nov/2025 23:29:39] "POST /api/notes HTTP/1.1" 200 -

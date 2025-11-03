@@ -993,36 +993,42 @@
             updateRemainingTime();
             updateEndTime();
         }
-        
+
+        // 在全局变量区域新增基础剩余时间变量
+        let baseRemainingTime = 7 * 60 * 60; // 基础剩余时间（不包含当前计时的变动）
+
         function updateRemainingTime() {
             const totalGoalHours = parseFloat(document.getElementById('work-hours').value) || 0;
-            workGoalTime = Math.round(totalGoalHours * 60 * 60);
+            workGoalTime = Math.round(totalGoalHours * 60 * 60); // 目标总时长（秒）
 
-            // 计算已完成时长 (小时)
+            // 计算已完成的工作记录总时长（秒）
             const completedHours = workRecords.reduce((total, record) => total + record.hours, 0);
             const completedTimeSec = Math.round(completedHours * 60 * 60);
             
-            let newRemainingTime = workGoalTime - completedTimeSec;
+            // 基础剩余时间 = 目标时间 - 已完成记录时间（仅计算一次）
+            baseRemainingTime = Math.max(0, workGoalTime - completedTimeSec);
             
+            // 当前剩余时间 = 基础剩余时间（如果未计时）或正在进行的剩余时间
             const wasRunning = isTimerRunning;
             if (wasRunning) {
                 clearInterval(timerInterval);
                 isTimerRunning = false;
             }
-
-            remainingTime = Math.max(0, newRemainingTime);
+            
+            // 只有在未计时状态下，才同步剩余时间与基础剩余时间
+            if (!wasRunning) {
+                remainingTime = baseRemainingTime;
+            }
 
             if (wasRunning) {
-                // 如果之前正在运行，用新的剩余时间重新启动
-                startTimer();
+                startTimer(); // 重新启动计时器
             } else {
-                // 否则只是更新显示
-                updateTimerDisplay();
+                updateTimerDisplay(); // 更新显示
             }
 
             updateEndTime();
             saveToLocalStorage();
-            renderMonthlyChart(); // 每次记录变动时更新图表
+            renderMonthlyChart();
         }
 
         function startTimer() {
@@ -1034,10 +1040,12 @@
             document.getElementById('timer-page-start').classList.add('hidden');
             document.getElementById('timer-page-pause').classList.remove('hidden');
             
+            // 在计时器的setInterval逻辑中（约1051行）
             timerInterval = setInterval(function() {
                 remainingTime--;
                 updateTimerDisplay();
-                
+                saveToLocalStorage();
+
                 if (remainingTime <= 0) {
                     clearInterval(timerInterval);
                     isTimerRunning = false;
@@ -1046,13 +1054,14 @@
                     document.getElementById('timer-page-start').classList.remove('hidden');
                     document.getElementById('timer-page-pause').classList.add('hidden');
                     
-                    const hours = workGoalTime / 3600;
-                    addWorkRecord(hours, false);
+                    // 计算本次实际计时时长（基础剩余时间 - 结束时剩余时间，避免负数）
+                    const actualHours = Math.max(0, (baseRemainingTime - remainingTime) / 3600);
+                    addWorkRecord(actualHours, false); // 添加本次计时记录
                     
+                    // 重新计算剩余时间（基于新添加的记录）
+                    updateRemainingTime(); 
                     alert('工作时间已结束！');
                 }
-                
-                saveToLocalStorage();
             }, 1000);
         }
         
@@ -1073,7 +1082,16 @@
             pauseTimer();
             const hours = parseFloat(document.getElementById('work-hours').value) || 0;
             workGoalTime = Math.round(hours * 60 * 60);
-            updateRemainingTime();
+            
+            // 重置时直接重新计算基础剩余时间，不依赖之前的剩余时间
+            const completedHours = workRecords.reduce((total, record) => total + record.hours, 0);
+            const completedTimeSec = Math.round(completedHours * 60 * 60);
+            baseRemainingTime = Math.max(0, workGoalTime - completedTimeSec);
+            remainingTime = baseRemainingTime;
+            
+            updateTimerDisplay();
+            updateEndTime();
+            saveToLocalStorage();
         }
         
         function updateTimerDisplay() {
@@ -1104,17 +1122,39 @@
             const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
             
             const record = {
-                id: Date.now(),
                 date: dateString,
                 time: timeString,
                 hours: hours,
                 manual: manual
             };
-            
-            workRecords.unshift(record);
+
+            // 先更新本地记录并刷新UI
+            workRecords.unshift({...record, id: Date.now()}); // 临时ID，后续会被后端ID替换
             renderWorkRecords();
             updateTodayStats();
             updateRemainingTime();
+            saveToLocalStorage();
+
+            // 同步到后端
+            fetch('/api/work-records', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(record)
+            }).then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // 用后端返回的带ID记录替换临时记录
+                    const index = workRecords.findIndex(r => r.date === data.record.date && r.time === data.record.time);
+                    if (index !== -1) {
+                        workRecords[index] = data.record;
+                        renderWorkRecords();
+                        saveToLocalStorage();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('添加工作记录到后端失败:', error);
+            });
         }
 
         function addManualRecord() {
@@ -1133,22 +1173,41 @@
             const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
             
             const record = {
-                id: Date.now(),
                 date: date,
                 time: timeString,
                 hours: hours,
                 manual: true 
             };
-            
-            workRecords.unshift(record);
+
+            // 先更新本地
+            workRecords.unshift({...record, id: Date.now()});
             renderWorkRecords();
             updateTodayStats();
             updateRemainingTime();
             saveToLocalStorage();
-            
-            alert(`已成功添加 ${hours} 小时的工作记录 (${date})`);
-            
-            hoursInput.value = '1';
+
+            // 同步到后端
+            fetch('/api/work-records', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(record)
+            }).then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const index = workRecords.findIndex(r => r.date === data.record.date && r.time === data.record.time);
+                    if (index !== -1) {
+                        workRecords[index] = data.record;
+                        renderWorkRecords();
+                        saveToLocalStorage();
+                    }
+                    alert(`已成功添加 ${hours} 小时的工作记录 (${date})`);
+                    hoursInput.value = '1';
+                }
+            })
+            .catch(error => {
+                console.error('手动添加记录到后端失败:', error);
+                alert('添加失败，请稍后重试');
+            });
         }
         
         function renderWorkRecords() {
@@ -2359,6 +2418,26 @@
         }
         
         function initNotes() {
+            // 从后端加载备忘录
+            fetch('/api/notes')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        notes = data.notes;  // 用后端数据覆盖本地数据
+                        renderNotes();
+                        updateTodayStats();
+                    }
+                })
+                .catch(error => {
+                    console.error('加载备忘录失败:', error);
+                    // 失败时 fallback 到本地存储
+                    const localData = localStorage.getItem('workspaceData');
+                    if (localData) {
+                        notes = JSON.parse(localData).notes || [];
+                        renderNotes();
+                    }
+                });
+
             document.getElementById('create-note-btn').addEventListener('click', function() {
                 currentNoteId = null;
                 document.getElementById('note-title').value = '';
@@ -2376,15 +2455,27 @@
             
             document.getElementById('delete-note-btn').addEventListener('click', function() {
                 if (currentNoteId && confirm('确定要删除这篇备忘录吗？')) {
-                    notes = notes.filter(note => note.id !== currentNoteId);
-                    renderNotes();
-                    document.getElementById('note-editor').classList.add('hidden');
-                    document.getElementById('notes-list').classList.remove('hidden');
-                    updateTodayStats();
-                    saveToLocalStorage();
+                    // 调用后端删除接口
+                    fetch(`/api/notes/${currentNoteId}`, { method: 'DELETE' })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                notes = notes.filter(note => note.id !== currentNoteId);
+                                renderNotes();
+                                document.getElementById('note-editor').classList.add('hidden');
+                                document.getElementById('notes-list').classList.remove('hidden');
+                                updateTodayStats();
+                            } else {
+                                alert('删除失败: ' + (data.error || '未知错误'));
+                            }
+                        })
+                        .catch(error => {
+                            console.error('删除失败:', error);
+                            alert('网络错误，删除失败');
+                        });
                 }
             });
-            
+                        
             document.getElementById('save-note-btn').addEventListener('click', saveNote);
             
             document.getElementById('format-bold').addEventListener('click', function() {
@@ -2486,40 +2577,73 @@
                 document.getElementById('note-title').focus();
                 return;
             }
-            
-            const now = new Date();
-            const timeString = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-            
-            if (currentNoteId) {
-                const index = notes.findIndex(note => note.id === currentNoteId);
-                if (index !== -1) {
-                    notes[index].title = title;
-                    notes[index].content = content;
-                    notes[index].last_edited = timeString;
-                }
-            } else {
-                const newNote = {
-                    id: Date.now(),
-                    title: title,
-                    content: content,
-                    last_edited: timeString
-                };
-                notes.unshift(newNote);
-                currentNoteId = newNote.id;
-            }
-            
-            renderNotes();
-            updateTodayStats();
-            
+
+            const noteData = { title, content };
             const saveButton = document.getElementById('save-note-btn');
             const originalText = saveButton.innerHTML;
-            saveButton.innerHTML = '<i class="fa fa-check mr-1"></i> 已保存';
-            
+            saveButton.innerHTML = '<i class="fa fa-circle-o-notch fa-spin mr-1"></i> 保存中...';
+            saveButton.disabled = true;
+
+            if (currentNoteId) {
+                // 更新已有备忘录（调用PUT接口）
+                fetch(`/api/notes/${currentNoteId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(noteData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const index = notes.findIndex(n => n.id === currentNoteId);
+                        if (index !== -1) notes[index] = data.note;
+                        renderNotes();
+                        updateTodayStats();
+                        showSaveSuccess(saveButton, originalText);
+                    } else {
+                        throw new Error(data.error || '保存失败');
+                    }
+                })
+                .catch(error => handleSaveError(error, saveButton, originalText));
+            } else {
+                // 创建新备忘录（调用POST接口）
+                fetch('/api/notes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(noteData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        notes.unshift(data.note);
+                        currentNoteId = data.note.id;
+                        renderNotes();
+                        updateTodayStats();
+                        showSaveSuccess(saveButton, originalText);
+                    } else {
+                        throw new Error(data.error || '创建失败');
+                    }
+                })
+                .catch(error => handleSaveError(error, saveButton, originalText));
+            }
+        }
+
+        // 辅助函数：显示保存成功状态
+        function showSaveSuccess(button, originalText) {
+            button.innerHTML = '<i class="fa fa-check mr-1"></i> 已保存';
             setTimeout(() => {
-                saveButton.innerHTML = originalText;
+                button.innerHTML = originalText;
+                button.disabled = false;
             }, 2000);
-            
-            saveToLocalStorage();
+        }
+
+        // 辅助函数：处理保存错误
+        function handleSaveError(error, button, originalText) {
+            console.error('保存失败:', error);
+            button.innerHTML = '<i class="fa fa-exclamation mr-1"></i> 保存失败';
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }, 2000);
         }
         
         function renderNotes() {
@@ -2558,20 +2682,32 @@
                     </div>
                 `;
                 
-                noteElement.addEventListener('click', function() {
-                    const noteId = parseInt(this.getAttribute('data-id'));
-                    const note = notes.find(n => n.id === noteId);
-                    
-                    if (note) {
-                        currentNoteId = noteId;
-                        document.getElementById('note-title').value = note.title;
-                        document.getElementById('note-content').innerHTML = note.content;
-                        document.getElementById('notes-list').classList.add('hidden');
-                        document.getElementById('note-editor').classList.remove('hidden');
-                        document.getElementById('delete-note-btn').classList.remove('hidden');
-                    }
-                });
+            // 在 renderNotes 函数中，替换原点击事件绑定代码
+            noteElement.addEventListener('click', function() {
+                // 修复：直接获取字符串ID，不进行parseInt转换（后端返回UUID是字符串）
+                const noteId = this.getAttribute('data-id');
+                const note = notes.find(n => n.id === noteId); // 字符串比较
                 
+                if (note) {
+                    currentNoteId = noteId; // 保持ID为字符串类型
+                    const titleInput = document.getElementById('note-title');
+                    const contentEl = document.getElementById('note-content');
+                    const notesList = document.getElementById('notes-list');
+                    const noteEditor = document.getElementById('note-editor');
+                    const deleteBtn = document.getElementById('delete-note-btn');
+                    
+                    // 再次检查元素是否存在，避免空引用
+                    if (titleInput && contentEl && notesList && noteEditor && deleteBtn) {
+                        titleInput.value = note.title;
+                        contentEl.innerHTML = note.content;
+                        notesList.classList.add('hidden');
+                        noteEditor.classList.remove('hidden');
+                        deleteBtn.classList.remove('hidden');
+                    } else {
+                        console.error('备忘录编辑所需的DOM元素不存在');
+                    }
+                }
+            });
                 container.appendChild(noteElement);
             });
         }
@@ -2852,29 +2988,43 @@
             const workHours = Math.floor(totalWorkHours);
             const workMinutes = Math.round((totalWorkHours - workHours) * 60);
             
-            document.getElementById('today-worked').textContent = 
-                `${workHours}小时${workMinutes}分钟`;
-                
-            document.getElementById('today-read').textContent = "0篇";
+            // 修复1：检查元素是否存在再操作
+            const todayWorkedEl = document.getElementById('today-worked');
+            if (todayWorkedEl) {
+                todayWorkedEl.textContent = `${workHours}小时${workMinutes}分钟`;
+            }
             
-            const todayNotes = notes.filter(note => note.last_edited.startsWith(today));
-            document.getElementById('today-notes').textContent = `${todayNotes.length}篇`;
+            // 修复2：检查"今日阅读"元素是否存在（若HTML中没有该元素可注释此句）
+            const todayReadEl = document.getElementById('today-read');
+            if (todayReadEl) {
+                todayReadEl.textContent = "0篇"; // 后续可完善阅读统计逻辑
+            }
+            
+            const todayNotes = notes.filter(note => note.last_edited?.startsWith(today));
+            const todayNotesEl = document.getElementById('today-notes');
+            if (todayNotesEl) {
+                todayNotesEl.textContent = `${todayNotes.length}篇`;
+            }
         }
-        
+                
+        // 保存到本地存储（仅保留必要数据，作为后端备份）
         function saveToLocalStorage() {
             const data = {
+                // 保留临时状态（计时器运行状态等）
                 workGoalTime: workGoalTime,
                 remainingTime: remainingTime,
                 isTimerRunning: isTimerRunning,
+                // 核心数据仅作为缓存（后端为主）
                 workRecords: workRecords,
                 pdfBooks: pdfBooks,
-                notes: notes,
-                bookmarks: bookmarks
+                bookmarks: bookmarks,
+                notes: notes
             };
             
             localStorage.setItem('workspaceData', JSON.stringify(data));
         }
-        
+
+        // 从本地存储加载（优先使用后端数据，本地作为 fallback）
         function loadFromLocalStorage() {
             const data = localStorage.getItem('workspaceData');
             if (data) {
@@ -2882,30 +3032,25 @@
                     const parsedData = JSON.parse(data);
                     
                     workGoalTime = parsedData.workGoalTime || 7 * 60 * 60;
-                    remainingTime = parsedData.remainingTime || workGoalTime;
-                    isTimerRunning = parsedData.isTimerRunning || false;
                     workRecords = parsedData.workRecords || [];
-                    bookmarks = parsedData.bookmarks || [];
+                    isTimerRunning = parsedData.isTimerRunning || false;
                     
-                    // 修复：确保加载时旧的 book 数据具有 file_type 和 scroll_pos 属性
-                    pdfBooks = (parsedData.pdfBooks || []).map(book => ({
-                        ...book,
-                        // 尝试根据路径推断 file_type，否则默认为 pdf
-                        file_type: book.file_type || (book.file_path && book.file_path.endsWith('.txt') ? 'txt' : 'pdf'),
-                        scroll_pos: book.scroll_pos || 0,
-                    }));
+                    // 重新计算基础剩余时间（基于加载的记录）
+                    const completedHours = workRecords.reduce((total, record) => total + record.hours, 0);
+                    const completedTimeSec = Math.round(completedHours * 60 * 60);
+                    baseRemainingTime = Math.max(0, workGoalTime - completedTimeSec);
                     
-                    notes = parsedData.notes || [];
+                    // 加载剩余时间（如果正在计时则用存储的值，否则用基础剩余时间）
+                    remainingTime = isTimerRunning ? (parsedData.remainingTime || baseRemainingTime) : baseRemainingTime;
 
                     const hours = workGoalTime / 3600;
                     document.getElementById('work-hours').value = hours;
                     document.getElementById('timer-page-hours').value = hours;
                     
-                    updateRemainingTime();
+                    updateTimerDisplay();
+                    updateEndTime();
                     renderWorkRecords();
-                    renderBooks();
-                    renderNotes();
-                    renderBookmarks();
+                    renderMonthlyChart();
                     updateTodayStats();
                     
                     if (isTimerRunning) {
@@ -2919,18 +3064,36 @@
             }
         }
         
+        // 在 window.addEventListener('load', ...) 中添加
+        function initWorkRecords() {
+            fetch('/api/work-records')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.records) {
+                        workRecords = data.records;
+                        renderWorkRecords();
+                        updateTodayStats();
+                    }
+                })
+                .catch(() => {
+                    console.log('后端工作记录加载失败，使用本地缓存');
+                });
+        }
+
+        // 调用顺序调整
         window.addEventListener('load', function() {
             initNavigation();
             initTimer();
-            initBooks();
+            initBooks(); 
             initMusic();
             initGames();
-            initNotes();
+            initNotes(); 
             initChat();
-            initBookmarks();
-            loadFromLocalStorage();
+            initBookmarks(); 
+            initWorkRecords(); // 新增：优先从后端加载工作记录
+            loadFromLocalStorage(); // 最后加载本地缓存补充
         });
-        
+                
     </script>
 </body>
 </html>

@@ -6,11 +6,11 @@ import jwt
 from functools import wraps
 import requests
 from dotenv import load_dotenv
-from .models import db, PDFBook # 导入更新后的模型
-import time # 导入 time 模块用于时间戳
+import time  # 导入 time 模块用于时间戳
 import codecs
 import json
-from .models import db, PDFBook, Conversation, Message, Bookmark   # 更新导入
+from .models import db, PDFBook, Conversation, Message, Bookmark, Note, WorkRecord  # 更新导入
+from flask_migrate import Migrate  # 新增导入
 
 # 加载环境变量
 load_dotenv() 
@@ -34,11 +34,13 @@ app.config['SECRET_KEY'] = 'your-secret-key-here'
 os.makedirs(app.config['PDF_FOLDER'], exist_ok=True)
 os.makedirs(app.config['IMAGE_FOLDER'], exist_ok=True)
 
-# 初始化数据库
+# 初始化数据库（只需要一次）
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///freework.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
+# 初始化迁移工具
+migrate = Migrate(app, db)
 
 # 上传文档接口 (支持 PDF/TXT)
 # 修改上传文档接口
@@ -340,6 +342,102 @@ def add_message(conv_id):
 def delete_conversation(conv_id):
     conv = Conversation.query.get_or_404(conv_id)
     db.session.delete(conv)
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+# 新增备忘录
+@app.route('/api/notes', methods=['POST'])
+def create_note():
+    data = request.json
+    if not data or not data.get('title'):
+        return jsonify({'success': False, 'error': '标题不能为空'}), 400
+    
+    new_note = Note(
+        id=str(uuid.uuid4()),  # 使用UUID作为唯一标识
+        title=data['title'],
+        content=data.get('content', ''),
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
+    db.session.add(new_note)
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'note': new_note.to_dict()
+    })
+
+# 获取所有备忘录
+@app.route('/api/notes', methods=['GET'])
+def get_notes():
+    notes = Note.query.order_by(Note.updated_at.desc()).all()
+    return jsonify({
+        'success': True,
+        'notes': [note.to_dict() for note in notes]
+    })
+
+# 更新备忘录
+@app.route('/api/notes/<string:note_id>', methods=['PUT'])
+def update_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    data = request.json
+    
+    if 'title' in data:
+        note.title = data['title']
+    if 'content' in data:
+        note.content = data['content']
+    note.updated_at = datetime.utcnow()
+    
+    db.session.commit()
+    return jsonify({'success': True, 'note': note.to_dict()})
+
+# 删除备忘录
+@app.route('/api/notes/<string:note_id>', methods=['DELETE'])
+def delete_note(note_id):
+    note = Note.query.get_or_404(note_id)
+    db.session.delete(note)
+    db.session.commit()
+    return jsonify({'success': True})
+
+# 工作记录接口 - 获取所有记录
+@app.route('/api/work-records', methods=['GET'])
+def get_work_records():
+    records = WorkRecord.query.order_by(
+        WorkRecord.date.desc(), 
+        WorkRecord.time.desc()
+    ).all()
+    return jsonify({
+        'success': True,
+        'records': [record.to_dict() for record in records]
+    })
+
+# 工作记录接口 - 添加新记录
+@app.route('/api/work-records', methods=['POST'])
+def add_work_record():
+    data = request.json
+    if not data or 'date' not in data or 'time' not in data or 'hours' not in data:
+        return jsonify({'success': False, 'error': '缺少必要参数'}), 400
+    
+    new_record = WorkRecord(
+        date=data['date'],
+        time=data['time'],
+        hours=float(data['hours']),
+        manual=data.get('manual', False)
+    )
+    db.session.add(new_record)
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'record': new_record.to_dict()
+    })
+
+# 工作记录接口 - 删除记录
+@app.route('/api/work-records/<int:record_id>', methods=['DELETE'])
+def delete_work_record(record_id):
+    record = WorkRecord.query.get_or_404(record_id)
+    db.session.delete(record)
     db.session.commit()
     return jsonify({'success': True})
 

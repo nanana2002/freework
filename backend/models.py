@@ -69,3 +69,39 @@ class Message(db.Model):
             'content': self.content,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S')
         }
+    
+class Note(db.Model):
+    id = db.Column(db.String(36), primary_key=True)  # UUID长度为36
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, default='')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'content': self.content,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+            'last_edited': self.updated_at.strftime('%Y-%m-%d %H:%M')  # 适配前端显示格式
+        }
+    
+# 新增工作记录模型
+class WorkRecord(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.String(10), nullable=False)  # 日期格式：YYYY-MM-DD
+    time = db.Column(db.String(8), nullable=False)   # 时间格式：HH:MM
+    hours = db.Column(db.Float, nullable=False)      # 工作时长（小时）
+    manual = db.Column(db.Boolean, default=False)    # 是否手动添加
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'date': self.date,
+            'time': self.time,
+            'hours': self.hours,
+            'manual': self.manual,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        }
