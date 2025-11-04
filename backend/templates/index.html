@@ -101,36 +101,30 @@
             transition: all 0.2s ease;
         }
         
-        /* 五子棋样式 */
-        #gomoku .board {
+        /* 扫雷游戏样式 */
+        #game-minesweeper .board {
             display: grid;
-            grid-template-columns: repeat(15, 1fr);
+            grid-template-columns: repeat(10, 1fr);
             gap: 2px;
+            margin: 0 auto;
         }
         
-        #gomoku .board-cell {
+        #game-minesweeper .cell {
             aspect-ratio: 1/1;
             background-color: #E6B89C;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            user-select: none;
         }
         
-        #gomoku .stone {
-            border-radius: 50%;
-            width: 80%;
-            height: 80%;
-            transition: all 0.2s ease;
+        #game-minesweeper .cell.flagged::before {
+            content: "🚩";
         }
         
-        #gomoku .stone.black {
-            background-color: #000;
-        }
-        
-        #gomoku .stone.white {
-            background-color: #fff;
-            border: 1px solid #ccc;
+        #game-minesweeper .cell.mine::before {
+            content: "💣";
         }
         
         /* 备忘录样式 */
@@ -363,17 +357,6 @@
                             <div class="text-gray-500 text-center py-4">暂无工作记录</div>
                         </div>
                     </div>
-
-                    <!-- 月视图图表 -->
-                    <div class="border-t pt-6 mt-6">
-                        <h3 class="font-bold text-lg mb-4">每月工作时长视图</h3>
-                        <div class="bg-white p-4 rounded-lg shadow">
-                            <canvas id="monthly-chart" width="400" height="200" class="w-full"></canvas>
-                        </div>
-                        <p class="text-sm text-gray-500 mt-2 text-center">
-                            图表展示了最近几个月的工作小时数（不包括未来记录）。
-                        </p>
-                    </div>
                 </div>
             </div>
         </div>
@@ -403,6 +386,18 @@
                                 <label class="block text-gray-700 mb-2" for="pdf-cover">选择封面图片 (可选)</label>
                                 <input type="file" id="pdf-cover" accept="image/*" class="w-full border rounded p-2">
                             </div>
+                            <!-- TXT编码选择 -->
+                            <div class="mb-4" id="txt-encoding-div" style="display: none;">
+                                <label class="block text-gray-700 mb-2" for="file-encoding">文档编码 (仅TXT)</label>
+                                <select id="file-encoding" class="w-full border rounded p-2">
+                                    <option value="utf-8">UTF-8 (推荐)</option>
+                                    <option value="gbk">GBK</option>
+                                    <option value="gb2312">GB2312</option>
+                                    <option value="gb18030">GB18030</option>
+                                    <option value="big5">Big5</option>
+                                    <option value="windows-1252">ANSI/Windows-1252</option>
+                                </select>
+                            </div>
                             <div class="flex justify-end gap-3">
                                 <button type="button" id="cancel-upload" class="border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-100 transition">
                                     取消
@@ -415,41 +410,9 @@
                     </div>
                 </div>
                 
-                <div class="book-shelf grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-                    <!-- 初始卡片结构用于占位，实际渲染将由 JS 负责 -->
-                    <div class="book bg-white rounded-lg overflow-hidden card-shadow cursor-pointer" data-id="1">
-                        <div class="absolute top-2 right-2 z-10">
-                            <button class="delete-book bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition" 
-                                    data-id="1">
-                                <i class="fa fa-times text-xs"></i>
-                            </button>
-                        </div>
-                        <div class="h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
-                            <img src="static/icons/file-earmark-pdf.svg" alt="文档封面" class="book-cover h-48 w-full object-cover p-10">
-                        </div>
-                        <div class="p-3">
-                            <h3 class="font-bold truncate">示例文档1</h3>
-                            <p class="text-sm text-gray-500">2023-10-01</p>
-                        </div>
-                    </div>
-                    
-                    <div class="book bg-white rounded-lg overflow-hidden card-shadow cursor-pointer" data-id="2">
-                        <div class="absolute top-2 right-2 z-10">
-                            <button class="delete-book bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition" 
-                                    data-id="2">
-                                <i class="fa fa-times text-xs"></i>
-                            </button>
-                        </div>
-                        <div class="h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
-                            <img src="static/icons/file-earmark-pdf.svg" alt="文档封面" class="book-cover h-48 w-full object-cover p-10">
-                        </div>
-                        <div class="p-3">
-                            <h3 class="font-bold truncate">示例文档2</h3>
-                            <p class="text-sm text-gray-500">2023-10-02</p>
-                        </div>
-                    </div>
-                    
-                    </div>
+                <div class="book-shelf grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6" id="book-shelf">
+                    <!-- 书籍将通过JavaScript动态加载 -->
+                </div>
             </div>
         </div>
         
@@ -467,10 +430,15 @@
                         </div>
                 </div>
                 <div class="p-4 border-t flex justify-between items-center">
-                    <div>
+                    <div class="flex items-center">
                         <span id="pdf-page-info">第 1 页 / 共 ? 页</span>
+                        <div class="ml-4 flex items-center" id="pdf-navigation">
+                            <label for="pdf-page-input">跳转到第</label>
+                            <input type="number" id="pdf-page-input" class="w-16 border rounded p-1 mx-1 text-dark" min="1">
+                            <button id="pdf-jump-btn" class="bg-primary text-white px-2 py-1 rounded">页</button>
+                        </div>
                     </div>
-                    <div class="flex gap-2">
+                    <div class="flex gap-2" id="pdf-buttons">
                         <button id="pdf-prev-page" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed">
                             上一页
                         </button>
@@ -497,14 +465,16 @@
                         <i class="fa fa-times-circle"></i>
                     </button>
                 </div>
-                <!-- 在TXT阅读器工具栏添加 -->
+                <!-- 在TXT阅读器工具栏添加编码选择 -->
                 <div class="txt-encoding-selector mb-2">
                     <label for="txt-display-encoding">显示编码：</label>
                     <select id="txt-display-encoding" class="text-dark p-1 rounded">
                         <option value="utf-8">UTF-8</option>
                         <option value="gbk">GBK</option>
+                        <option value="gb2312">GB2312</option>
                         <option value="gb18030">GB18030</option>
                         <option value="big5">Big5</option>
+                        <option value="windows-1252">ANSI/Windows-1252</option>
                     </select>
                 </div>
             </header>
@@ -514,10 +484,15 @@
                 </div>
             </div>
             <footer class="bg-dark text-light p-2 flex justify-center items-center flex-shrink-0">
+                <div class="flex items-center">
+                    <label for="txt-page-input">跳转到第</label>
+                    <input type="number" id="txt-page-input" class="w-16 border rounded p-1 mx-1 text-dark" min="1">
+                    <button id="txt-jump-btn" class="bg-primary px-2 py-1 rounded text-light">页</button>
+                </div>
+                <span id="txt-page-info" class="mx-4">第 1 页 / 共 1 页</span>
                 <button id="txt-prev-page" class="mx-3 px-3 py-1 bg-primary hover:bg-blue-600 rounded">
                     <i class="fa fa-arrow-up"></i> 上一页
                 </button>
-                <span id="txt-page-info" class="text-sm">第 1 页 / 共 1 页</span>
                 <button id="txt-next-page" class="mx-3 px-3 py-1 bg-primary hover:bg-blue-600 rounded">
                     <i class="fa fa-arrow-down"></i> 下一页
                 </button>
@@ -553,6 +528,17 @@
                 <div class="border rounded-lg overflow-hidden bg-gray-50 p-4">
                     <div id="music-player" class="aplayer">
                         </div>
+                    <div class="flex justify-center mt-4 space-x-4">
+                        <button id="music-prev" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            <i class="fa fa-step-backward"></i> 上一首
+                        </button>
+                        <button id="music-play-pause" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            <i id="play-pause-icon" class="fa fa-play"></i> 播放/暂停
+                        </button>
+                        <button id="music-next" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            下一首 <i class="fa fa-step-forward"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -568,8 +554,8 @@
                         <button class="game-selector active bg-primary text-white px-4 py-2 rounded-lg transition" data-game="1024">
                             1024游戏
                         </button>
-                        <button class="game-selector bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg transition" data-game="gomoku">
-                            五子棋
+                        <button class="game-selector bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg transition" data-game="minesweeper">
+                            扫雷
                         </button>
                         <button id="upload-game-btn" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg transition flex items-center">
                             <i class="fa fa-upload mr-2"></i> 上传游戏
@@ -578,6 +564,7 @@
                 </div>
                 
                 <div class="max-w-2xl mx-auto">
+                    <!-- 1024游戏 -->
                     <div id="game-1024" class="game-content">
                         <div>
                             <div class="flex justify-between items-center mb-4">
@@ -599,25 +586,37 @@
                         </div>
                     </div>
                     
-                    <div id="gomoku" class="game-content hidden">
-                        <div>
-                            <div class="flex justify-between items-center mb-4">
-                                <div>
-                                    <p class="text-gray-600">当前回合</p>
-                                    <div class="flex items-center">
-                                        <div class="stone black inline-block mr-2"></div>
-                                        <span id="current-player">黑方</span>
-                                    </div>
+                    <!-- 扫雷游戏 -->
+                    <div id="minesweeper" class="game-content hidden">
+                        <iframe id="minesweeper-frame" src="/static/games/minesweeper.html" 
+                                class="w-full h-[600px] border-none" title="扫雷游戏"></iframe>
+                    </div>
+                    
+                    <!-- 上传游戏内容 -->
+                    <div id="game-upload" class="game-content hidden">
+                        <div class="p-4 border rounded-lg bg-gray-50">
+                            <h4 class="font-semibold mb-2 flex items-center">
+                                <i class="fa fa-plus-circle mr-2 text-primary"></i> 上传自定义游戏
+                            </h4>
+                            <div class="flex flex-wrap items-end gap-3">
+                                <div class="flex-1 min-w-[150px]">
+                                    <label class="text-sm text-gray-600 block mb-1">游戏名称</label>
+                                    <input type="text" id="game-name" class="w-full border rounded p-2" placeholder="输入游戏名称">
                                 </div>
-                                <button id="restart-gomoku" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg transition">
-                                    重新开始
+                                <div class="flex-1 min-w-[200px]">
+                                    <label class="text-sm text-gray-600 block mb-1">选择游戏文件</label>
+                                    <input type="file" id="game-file" accept=".html,.htm,.js,.zip" class="w-full border rounded p-2">
+                                </div>
+                                <button id="upload-game-submit" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition flex-shrink-0">
+                                    <i class="fa fa-upload mr-1"></i> 上传
                                 </button>
                             </div>
-                            <div class="board rounded-lg" id="gomoku-board">
-                                </div>
-                            <p class="text-sm text-gray-500 mt-4 text-center">
-                                点击棋盘落子，先形成五子连线者获胜
-                            </p>
+                        </div>
+                        <div id="custom-games-list" class="mt-6">
+                            <h4 class="font-semibold mb-2">我的上传游戏</h4>
+                            <div id="custom-games-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                <!-- 自定义游戏将通过JS动态加载 -->
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -634,24 +633,10 @@
                 </div>
                 
                 <div id="notes-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="note-card bg-white border border-gray-200 rounded-lg overflow-hidden card-shadow cursor-pointer" data-id="1">
-                        <div class="p-4">
-                            <h3 class="font-bold text-lg mb-2 truncate">今日工作计划</h3>
-                            <p class="text-gray-600 text-sm line-clamp-3 mb-3">完成项目文档编写，召开团队会议，准备下周工作计划...</p>
-                            <p class="text-xs text-gray-400">最后编辑：2023-10-01 14:30</p>
-                        </div>
-                    </div>
-                    
-                    <div class="note-card bg-white border border-gray-200 rounded-lg overflow-hidden card-shadow cursor-pointer" data-id="2">
-                        <div class="p-4">
-                            <h3 class="font-bold text-lg mb-2 truncate">会议记录</h3>
-                            <p class="text-gray-600 text-sm line-clamp-3 mb-3">讨论了新功能的实现方案，分配了任务，确定了截止日期...</p>
-                            <p class="text-xs text-gray-400">最后编辑：2023-10-02 10:15</p>
-                        </div>
-                    </div>
+                    <!-- 备忘录列表将通过JavaScript动态加载 -->
                 </div>
                 
-                <div id="note-editor" class="border border-gray-200 rounded-lg overflow-hidden hidden">
+                <div id="note-editor" class="border border-gray-200 rounded-lg overflow-hidden hidden flex flex-col h-[70vh]">
                     <div class="border-b p-4 flex justify-between items-center">
                         <input type="text" id="note-title" placeholder="请输入标题..." class="text-xl font-bold border-none outline-none w-full">
                         <div class="flex gap-2">
@@ -671,9 +656,6 @@
                         <button id="format-italic" class="p-2 rounded hover:bg-gray-200" title="斜体 (Ctrl+I)">
                             <i class="fa fa-italic"></i>
                         </button>
-                        <button id="format-underline" class="p-2 rounded hover:bg-gray-200" title="下划线 (Ctrl+U)">
-                            <i class="fa fa-underline"></i>
-                        </button>
                         <span class="h-6 border-r border-gray-300 mx-1"></span>
                         <button id="format-heading" class="p-2 rounded hover:bg-gray-200" title="标题">
                             <i class="fa fa-header"></i>
@@ -685,21 +667,30 @@
                             <i class="fa fa-list-ol"></i>
                         </button>
                         <span class="h-6 border-r border-gray-300 mx-1"></span>
+                        <button id="format-link" class="p-2 rounded hover:bg-gray-200" title="插入链接">
+                            <i class="fa fa-link"></i>
+                        </button>
                         <label class="p-2 rounded hover:bg-gray-200 cursor-pointer" title="插入图片">
                             <i class="fa fa-image"></i>
                             <input type="file" id="insert-image" accept="image/*" class="hidden">
                         </label>
-                        <button id="format-link" class="p-2 rounded hover:bg-gray-200" title="插入链接">
-                            <i class="fa fa-link"></i>
-                        </button>
                         <span class="h-6 border-r border-gray-300 mx-1"></span>
+                        <button id="preview-note-btn" class="p-2 rounded hover:bg-gray-200" title="预览">
+                            <i class="fa fa-eye"></i> 预览
+                        </button>
                         <button id="save-note-btn" class="p-2 rounded hover:bg-gray-200 ml-auto" title="保存 (Ctrl+S)">
                             <i class="fa fa-save"></i> 保存
                         </button>
                     </div>
                     
-                    <div id="note-content" class="note-content p-4 bg-white" contenteditable="true">
-                        在此输入备忘录内容...
+                    <div class="flex flex-1 overflow-hidden">
+                        <div class="w-1/2 border-r">
+                            <textarea id="note-content-md" class="w-full h-full p-4 border-none outline-none resize-none font-mono text-sm" placeholder="在此输入 Markdown 内容..."></textarea>
+                        </div>
+                        <div id="note-preview" class="w-1/2 p-4 overflow-y-auto bg-white">
+                            <!-- Markdown 预览内容将在这里渲染 -->
+                            <div class="prose max-w-none">在此输入 Markdown 内容以预览...</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -733,6 +724,14 @@
                                 <button id="save-api-key" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition">
                                     保存密钥
                                 </button>
+                            </div>
+                            <div class="mt-3">
+                                <label for="model-type" class="block text-sm font-medium text-gray-700 mb-1">模型类型</label>
+                                <select id="model-type" class="border rounded p-2">
+                                    <option value="qwen-turbo">Qwen-Turbo</option>
+                                    <option value="qwen-max">Qwen-Max</option>
+                                    <option value="qwen-plus">Qwen-Plus</option>
+                                </select>
                             </div>
                         </div>
                         
@@ -797,6 +796,7 @@
     <script src="https://cdn.jsdelivr.net/npm/meting@2.0.1/dist/Meting.min.js"></script> 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
+
     <script>
         // PDF.js配置（依赖pdf.min.js已加载）
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.bootcdn.net/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -818,11 +818,6 @@
                 if (shelfArea) {
                     shelfArea.classList.remove('hidden');
                 }
-            }
-
-            // 每次切换到计时器页面时，重新渲染图表
-            if (pageId === 'timer') {
-                renderMonthlyChart();
             }
         }
 
@@ -854,7 +849,6 @@
         const DEFAULT_PDF_COVER = '/uploads/images/file-earmark-pdf.svg'; // 假定您将此SVG放在后端静态目录
         const DEFAULT_TXT_COVER = '/uploads/images/file-earmark-text.svg';
 
-
         // ----------------------------------------------------
         // 导航逻辑
         // ----------------------------------------------------
@@ -878,8 +872,6 @@
             document.querySelector('.nav-btn.active').classList.remove('hover:bg-gray-100');
         }
         
-
-
         // ----------------------------------------------------
         // 初始化计时器
         // ----------------------------------------------------
@@ -890,7 +882,6 @@
                 pauseBtn: document.getElementById('timer-page-pause'),
                 resetBtn: document.getElementById('timer-page-reset'),
                 hoursInput: document.getElementById('timer-page-hours'),
-                workHoursInput: document.getElementById('work-hours'),
                 addRecordBtn: document.getElementById('add-manual-record'),
                 dateInput: document.getElementById('manual-date'),
                 manualHoursInput: document.getElementById('manual-hours')
@@ -901,7 +892,6 @@
             if (elements.pauseBtn) elements.pauseBtn.addEventListener('click', pauseTimer);
             if (elements.resetBtn) elements.resetBtn.addEventListener('click', resetTimer);
             if (elements.hoursInput) elements.hoursInput.addEventListener('change', handleGoalChange);
-            if (elements.workHoursInput) elements.workHoursInput.addEventListener('change', handleGoalChange);
             if (elements.addRecordBtn) elements.addRecordBtn.addEventListener('click', addManualRecord);
 
             // 初始化日期为今天
@@ -918,11 +908,10 @@
             // 加载本地存储的记录
             loadFromLocalStorage();
             
-            // 初始化显示
+            updateTimerDisplay();
             updateRemainingTime();
             updateEndTime();
             renderWorkRecords();
-            renderMonthlyChart();
         }
 
         // ----------------------------------------------------
@@ -930,15 +919,6 @@
         // ----------------------------------------------------
         function handleGoalChange() {
             const hoursInput = document.getElementById('timer-page-hours');
-            const workHoursInput = document.getElementById('work-hours');
-            
-            // 确保两个输入框同步
-            if (this === hoursInput && workHoursInput) {
-                workHoursInput.value = this.value;
-            } else if (this === workHoursInput && hoursInput) {
-                hoursInput.value = this.value;
-            }
-            
             updateRemainingTime();
         }
 
@@ -946,8 +926,7 @@
         // 剩余时间计算与更新
         // ----------------------------------------------------
         function updateRemainingTime() {
-            const workHoursInput = document.getElementById('work-hours') || 
-                                document.getElementById('timer-page-hours');
+            const workHoursInput = document.getElementById('timer-page-hours');
                                 
             if (!workHoursInput) return;
             
@@ -980,13 +959,15 @@
 
             updateEndTime();
             saveToLocalStorage();
-            renderMonthlyChart();
             updateTodayStats();
         }
 
         // ----------------------------------------------------
-        // 计时器控制函数
+        // 计时器控制函数 (按照用户要求的逻辑)
         // ----------------------------------------------------
+        let totalSecondsWorked = 0;  // 变量b：计时器现在显示的时间（秒）
+        let manualAddedSeconds = 0;  // 用于记录手动添加的时间（内部使用）
+        
         function startTimer() {
             if (isTimerRunning) return;
             
@@ -1000,27 +981,10 @@
             
             // 启动计时器
             timerInterval = setInterval(function() {
-                remainingTime--;
+                totalSecondsWorked++;
                 updateTimerDisplay();
+                updateEndTime(); // 更新预计下班时间
                 saveToLocalStorage();
-
-                // 计时结束处理
-                if (remainingTime <= 0) {
-                    clearInterval(timerInterval);
-                    isTimerRunning = false;
-                    
-                    // 恢复按钮状态
-                    if (startBtn) startBtn.classList.remove('hidden');
-                    if (pauseBtn) pauseBtn.classList.add('hidden');
-                    
-                    // 计算实际工作时长并添加记录
-                    const actualHours = Math.max(0, (baseRemainingTime - remainingTime) / 3600);
-                    addWorkRecord(actualHours, false);
-                    
-                    // 更新剩余时间
-                    updateRemainingTime(); 
-                    alert('工作时间已结束！');
-                }
             }, 1000);
         }
 
@@ -1038,36 +1002,54 @@
             
             saveToLocalStorage();
         }
-
+        
         function resetTimer() {
-            pauseTimer();
+            // 停止计时器
+            if (isTimerRunning) {
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                
+                const startBtn = document.getElementById('timer-page-start');
+                const pauseBtn = document.getElementById('timer-page-pause');
+                if (startBtn) startBtn.classList.remove('hidden');
+                if (pauseBtn) pauseBtn.classList.add('hidden');
+            }
             
-            const workHoursInput = document.getElementById('work-hours') || 
-                                document.getElementById('timer-page-hours');
-                                
-            if (!workHoursInput) return;
-                                
-            const hours = parseFloat(workHoursInput.value) || 0;
-            workGoalTime = Math.round(hours * 60 * 60);
+            // 重置计时器
+            totalSecondsWorked = 0;
             
-            // 重新计算基础剩余时间
-            const completedHours = workRecords.reduce((total, record) => total + record.hours, 0);
-            const completedTimeSec = Math.round(completedHours * 60 * 60);
-            baseRemainingTime = Math.max(0, workGoalTime - completedTimeSec);
-            remainingTime = baseRemainingTime;
-            
+            // 更新显示
             updateTimerDisplay();
+            updateRemainingTime();
             updateEndTime();
+            
+            // 保存到本地存储
             saveToLocalStorage();
+            
+            // 清空今天的工作记录（保留其他日期的记录）
+            const today = new Date().toISOString().split('T')[0];
+            workRecords = workRecords.filter(record => record.date !== today);
+            
+            // 重新渲染工作记录
+            renderWorkRecords();
+            
+            alert('今日工作计时已重置');
         }
 
         // ----------------------------------------------------
-        // 显示更新函数
+        // 显示更新函数 (适应正计时)
         // ----------------------------------------------------
         function updateTimerDisplay() {
-            const hours = Math.floor(remainingTime / 3600);
-            const minutes = Math.floor((remainingTime % 3600) / 60);
-            const seconds = remainingTime % 60;
+            let hours, minutes, seconds;
+            if (isNaN(totalSecondsWorked) || totalSecondsWorked < 0) {
+                hours = 0;
+                minutes = 0;
+                seconds = 0;
+            } else {
+                hours = Math.floor(totalSecondsWorked / 3600);
+                minutes = Math.floor((totalSecondsWorked % 3600) / 60);
+                seconds = totalSecondsWorked % 60;
+            }
             
             const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             
@@ -1079,8 +1061,19 @@
         }
 
         function updateEndTime() {
+            const workHoursInput = document.getElementById('timer-page-hours');
+            if (!workHoursInput) return;
+            
+            const goalHours = parseFloat(workHoursInput.value) || 8; // 默认8小时
+            const goalSeconds = goalHours * 3600;
+            
+            // 计算预计下班时间 d = e + a - b
+            // e: 当前时间 (now)
+            // a: 目标时间 (goalSeconds) 
+            // b: 当前计时器显示时间 (totalSecondsWorked)
             const now = new Date();
-            const endTime = new Date(now.getTime() + remainingTime * 1000);
+            const remainingSeconds = Math.max(0, goalSeconds - totalSecondsWorked);
+            const endTime = new Date(now.getTime() + remainingSeconds * 1000);
             
             const hours = endTime.getHours().toString().padStart(2, '0');
             const minutes = endTime.getMinutes().toString().padStart(2, '0');
@@ -1099,9 +1092,12 @@
                 .filter(record => record.date === today)
                 .reduce((total, record) => total + record.hours, 0);
             
-            const statsEl = document.getElementById('today-stats');
-            if (statsEl) {
-                statsEl.textContent = `今日已工作: ${todayHours.toFixed(1)} 小时`;
+            const workHours = Math.floor(todayHours);
+            const workMinutes = Math.round((todayHours - workHours) * 60);
+            
+            const todayWorkedEl = document.getElementById('today-worked');
+            if (todayWorkedEl) {
+                todayWorkedEl.textContent = `${workHours}小时${workMinutes}分钟`;
             }
         }
 
@@ -1154,60 +1150,30 @@
 
         function addManualRecord() {
             const hoursInput = document.getElementById('manual-hours');
-            const dateInput = document.getElementById('manual-date');
             
-            if (!hoursInput || !dateInput) return;
+            if (!hoursInput) return;
             
             const hours = parseFloat(hoursInput.value);
-            const date = dateInput.value;
             
-            if (isNaN(hours) || hours <= 0 || !date) {
-                alert('请输入有效的工作时长和日期。');
+            if (isNaN(hours) || hours <= 0) {
+                alert('请输入有效的工作时长。');
                 return;
             }
             
-            const now = new Date();
-            const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            // 将手动添加的时间直接加到当前总计时器时间 b = b + c
+            const secondsToAdd = Math.round(hours * 3600);
+            totalSecondsWorked += secondsToAdd;
             
-            const record = {
-                date: date,
-                time: timeString,
-                hours: parseFloat(hours.toFixed(1)),
-                manual: true 
-            };
-
-            // 先更新本地
-            workRecords.unshift({...record, id: Date.now()});
-            renderWorkRecords();
-            updateTodayStats();
+            // 更新显示
+            updateTimerDisplay();
             updateRemainingTime();
+            updateEndTime();
+            
+            // 保存到本地存储
             saveToLocalStorage();
-
-            // 同步到后端
-            fetch('/api/work-records', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(record)
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success && data.record?.id) {
-                    const index = workRecords.findIndex(r => 
-                        r.date === data.record.date && r.time === data.record.time
-                    );
-                    if (index !== -1) {
-                        workRecords[index] = data.record;
-                        renderWorkRecords();
-                        saveToLocalStorage();
-                    }
-                    alert(`已成功添加 ${hours} 小时的工作记录 (${date})`);
-                    hoursInput.value = '1'; // 重置输入框
-                }
-            })
-            .catch(error => {
-                console.error('手动添加记录到后端失败:', error);
-                alert('添加失败，请稍后重试');
-            });
+            
+            alert(`已添加 ${hours} 小时的工作时间`);
+            hoursInput.value = '1'; // 重置输入框
         }
 
         function deleteWorkRecord(id) {
@@ -1221,30 +1187,33 @@
             updateRemainingTime();
             saveToLocalStorage();
             
-            // 同步到后端
+            // 同步到后端 - 使用后端实际的整数ID
             fetch(`/api/work-records/${id}`, {
                 method: 'DELETE'
             })
-            .then(response => {
-                if (!response.ok) {
-                    // 恢复删除的记录
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 成功删除，保持记录在本地删除状态
+                    console.log('工作记录删除成功');
+                } else {
+                    // 删除失败，恢复记录
                     workRecords.splice(recordIndex, 0, deletedRecord);
                     renderWorkRecords();
                     updateTodayStats();
                     updateRemainingTime();
                     saveToLocalStorage();
-                    throw new Error('删除失败');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (!data.success) {
-                    console.error('后端删除失败:', data.error);
-                    alert('删除失败，请稍后重试');
+                    alert('删除失败: ' + (data.error || '未知错误'));
                 }
             })
             .catch(error => {
                 console.error('删除工作记录失败:', error);
+                // 如果网络错误，恢复删除的记录
+                workRecords.splice(recordIndex, 0, deletedRecord);
+                renderWorkRecords();
+                updateTodayStats();
+                updateRemainingTime();
+                saveToLocalStorage();
                 alert('网络错误，删除失败');
             });
         }
@@ -1287,97 +1256,6 @@
         }
 
         // ----------------------------------------------------
-        // 月度图表展示
-        // ----------------------------------------------------
-        function getMonthlyData() {
-            const data = {};
-            const now = new Date();
-            
-            // 准备最近6个月的数据结构
-            for (let i = 0; i < 6; i++) {
-                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const monthKey = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
-                const label = `${d.getMonth() + 1}月`;
-                data[monthKey] = { hours: 0, label: label };
-            }
-
-            // 累加每月工作时长
-            workRecords.forEach(record => {
-                const monthKey = record.date.substring(0, 7); // 提取 YYYY-MM
-                if (data.hasOwnProperty(monthKey)) {
-                    data[monthKey].hours += record.hours;
-                }
-            });
-
-            // 整理数据格式
-            const keys = Object.keys(data).sort(); // 按月份排序
-            return {
-                labels: keys.map(key => data[key].label),
-                hours: keys.map(key => parseFloat(data[key].hours.toFixed(1)))
-            };
-        }
-
-        function renderMonthlyChart() {
-            const chartCanvas = document.getElementById('monthly-chart');
-            if (!chartCanvas) return;
-            
-            const ctx = chartCanvas.getContext('2d');
-            const data = getMonthlyData();
-            const { labels, hours } = data;
-            
-            // 清除画布
-            ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
-
-            // 图表配置
-            const padding = 30;
-            const chartHeight = chartCanvas.height - 2 * padding;
-            const chartWidth = chartCanvas.width - 2 * padding;
-            const maxHours = Math.max(...hours, 1); // 确保至少为1，避免除以0
-            const numBars = hours.length;
-            
-            // 计算柱形宽度和间距
-            const totalBarSpace = chartWidth * 0.7; // 柱形总宽度占70%
-            const totalGapSpace = chartWidth - totalBarSpace; // 间隙总宽度
-            const barWidth = totalBarSpace / numBars;
-            const gap = numBars > 1 ? totalGapSpace / (numBars - 1) : 0;
-
-            // 绘制坐标轴
-            ctx.strokeStyle = '#ccc';
-            ctx.beginPath();
-            ctx.moveTo(padding, padding);
-            ctx.lineTo(padding, chartCanvas.height - padding);
-            ctx.lineTo(chartCanvas.width - padding, chartCanvas.height - padding);
-            ctx.stroke();
-
-            // 绘制柱形
-            ctx.fillStyle = '#3B82F6'; // 蓝色
-            hours.forEach((h, index) => {
-                const barHeight = (h / maxHours) * chartHeight;
-                const x = padding + index * (barWidth + gap);
-                const y = chartCanvas.height - padding - barHeight;
-
-                // 绘制柱形
-                ctx.fillRect(x, y, barWidth, barHeight);
-                
-                // 添加阴影效果
-                ctx.fillStyle = 'rgba(59, 130, 246, 0.3)';
-                ctx.fillRect(x, chartCanvas.height - padding, barWidth, 5);
-                
-                // 绘制月份标签
-                ctx.fillStyle = '#666';
-                ctx.font = '12px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText(labels[index], x + barWidth / 2, chartCanvas.height - padding + 15);
-                
-                // 绘制小时数
-                if (h > 0) {
-                    ctx.fillStyle = '#333';
-                    ctx.fillText(`${h}h`, x + barWidth / 2, y - 8);
-                }
-            });
-        }
-
-        // ----------------------------------------------------
         // 本地存储管理
         // ----------------------------------------------------
         function saveToLocalStorage() {
@@ -1396,33 +1274,67 @@
 
         function loadFromLocalStorage() {
             try {
-                const savedRecords = localStorage.getItem('workRecords');
-                if (savedRecords) {
-                    workRecords = JSON.parse(savedRecords);
-                }
-                
-                const timerState = localStorage.getItem('timerState');
-                if (timerState) {
-                    const state = JSON.parse(timerState);
-                    isTimerRunning = state.isRunning;
-                    remainingTime = state.remainingTime;
-                    baseRemainingTime = state.baseRemainingTime;
-                    workGoalTime = state.workGoalTime;
+                const savedData = localStorage.getItem('workspaceData');
+                if (savedData) {
+                    const data = JSON.parse(savedData);
+                    
+                    // 加载工作记录
+                    if (data.workRecords) {
+                        workRecords = data.workRecords;
+                    }
+                    
+                    // 加载计时器状态
+                    if (data.isTimerRunning !== undefined) {
+                        isTimerRunning = data.isTimerRunning;
+                    }
+                    if (data.workGoalTime !== undefined) {
+                        workGoalTime = data.workGoalTime;
+                    }
+                    if (data.remainingTime !== undefined) {
+                        remainingTime = data.remainingTime;
+                    }
+                    
+                    // 关键修改：只在同一天加载保存的计时器时间，新一天保持为0
+                    const today = new Date().toISOString().split('T')[0];
+                    const savedDate = localStorage.getItem('lastSavedDate');
+                    
+                    if (savedDate === today && data.totalSecondsWorked !== undefined) {
+                        // 同一天，加载之前保存的计时器时间 b
+                        totalSecondsWorked = data.totalSecondsWorked;
+                    } else {
+                        // 新的一天，计时器重置为0
+                        totalSecondsWorked = 0;
+                    }
                     
                     // 恢复工作目标输入框值
                     const hours = workGoalTime / 3600;
                     const hoursInput = document.getElementById('timer-page-hours');
-                    const workHoursInput = document.getElementById('work-hours');
                     if (hoursInput) hoursInput.value = hours;
-                    if (workHoursInput) workHoursInput.value = hours;
                     
                     // 如果计时器之前在运行，重新启动
                     if (isTimerRunning) {
                         startTimer();
                     }
+                    
+                    // 更新显示
+                    updateTimerDisplay();
+                    updateRemainingTime();
+                    updateEndTime();
+                    renderWorkRecords();
+                } else {
+                    // 如果没有保存的数据，新一天计时器为0
+                    const today = new Date().toISOString().split('T')[0];
+                    totalSecondsWorked = 0;
+                    updateTimerDisplay();
+                    updateEndTime();
                 }
             } catch (e) {
                 console.error('从本地存储加载失败:', e);
+                // 发生错误时，新一天计时器为0
+                const today = new Date().toISOString().split('T')[0];
+                totalSecondsWorked = 0;
+                updateTimerDisplay();
+                updateEndTime();
             }
         }
 
@@ -1430,6 +1342,16 @@
         // 书架、PDF、TXT 逻辑
         // ----------------------------------------------------
         function initBooks() {
+            // 监听文件选择，显示编码选项（仅对TXT文件）
+            document.getElementById('pdf-file').addEventListener('change', function() {
+                const file = this.files[0];
+                if (file && file.name.toLowerCase().endsWith('.txt')) {
+                    document.getElementById('txt-encoding-div').style.display = 'block';
+                } else {
+                    document.getElementById('txt-encoding-div').style.display = 'none';
+                }
+            });
+            
             fetch('/api/get-pdfs') // 假设您的 API 能够返回 PDF 和 TXT 的列表
                 .then(response => response.json())
                 .then(data => {
@@ -1451,6 +1373,7 @@
             document.getElementById('cancel-upload').addEventListener('click', function() {
                 document.getElementById('upload-modal').classList.add('hidden');
                 document.getElementById('pdf-upload-form').reset();
+                document.getElementById('txt-encoding-div').style.display = 'none';
             });
             
             document.getElementById('pdf-upload-form').addEventListener('submit', function(e) {
@@ -1498,6 +1421,7 @@
                 if (shelfArea) {
                     shelfArea.classList.remove('hidden');
                 }
+                
                 pdfDoc = null;
             });
 
@@ -1511,9 +1435,61 @@
                 document.removeEventListener('keydown', window._txtKeydownHandler);
             });
             
+            // 添加页面跳转功能
+            document.getElementById('pdf-jump-btn').addEventListener('click', jumpToPdfPage);
+            document.getElementById('txt-jump-btn').addEventListener('click', jumpToTxtPage);
+            
             initTxtReader(); // 初始化TXT阅读器控制
             
             renderBooks();
+        }
+        
+        function jumpToPdfPage() {
+            const input = document.getElementById('pdf-page-input');
+            const pageNum = parseInt(input.value);
+            if (pageNum && pdfDoc && pageNum >= 1 && pageNum <= pdfDoc.numPages) {
+                currentPdfPage = pageNum;
+                renderPage(pdfDoc, currentPdfPage);
+                document.getElementById('pdf-page-info').textContent = `第 ${currentPdfPage} 页 / 共 ${pdfDoc.numPages} 页`;
+                document.getElementById('pdf-container').parentElement.scrollTop = 0;
+                input.value = '';
+            }
+        }
+        
+        // 确保renderPage函数是全局可访问的，以便jumpToPdfPage可以使用
+        function renderPage(pdf, pageNum) {
+            pdf.getPage(pageNum).then(page => {
+                const containerWidth = document.getElementById('pdf-container').clientWidth;
+                const viewport = page.getViewport({ scale: 1.5 });
+                const scale = containerWidth / viewport.width;
+                const finalViewport = page.getViewport({ scale: scale * 0.95 });
+                
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.height = finalViewport.height;
+                canvas.width = finalViewport.width;
+                
+                canvas.className = 'shadow-lg border border-gray-200';
+                
+                const pdfContainer = document.getElementById('pdf-container');
+                pdfContainer.innerHTML = '';
+                pdfContainer.appendChild(canvas);
+                
+                page.render({ canvasContext: ctx, viewport: finalViewport });
+            });
+        }
+        
+
+        
+        function jumpToTxtPage() {
+            const input = document.getElementById('txt-page-input');
+            const pageNum = parseInt(input.value);
+            if (pageNum && pageNum >= 1) {
+                const reader = document.getElementById('txt-reader');
+                const pageHeight = reader.clientHeight;
+                reader.scrollTop = pageHeight * (pageNum - 1);
+                input.value = '';
+            }
         }
         
         // index.html L1350 附近: finalizeUpload 函数
@@ -1531,6 +1507,7 @@
                 const encoding = document.getElementById('file-encoding').value;
                 formData.append('encoding', encoding);
             }
+
             // 如果有封面图片，也添加到 FormData
             const coverInput = document.getElementById('pdf-cover');
             if (coverInput.files.length > 0) {
@@ -1578,6 +1555,7 @@
                     renderBooks();
                     document.getElementById('upload-modal').classList.add('hidden');
                     formElement.reset();
+                    document.getElementById('txt-encoding-div').style.display = 'none';
                     saveToLocalStorage();
                     alert(`文档《${newBook.title}》上传成功!`);
                 } else {
@@ -1593,7 +1571,7 @@
         }
         
         function renderBooks() {
-            const shelf = document.querySelector('.book-shelf');
+            const shelf = document.getElementById('book-shelf');
             shelf.innerHTML = '';
             
             if (pdfBooks.length === 0) {
@@ -1673,10 +1651,26 @@
         }
 
         function deleteBook(bookId) {
-            if (confirm('模拟删除成功')) {
-                pdfBooks = pdfBooks.filter(book => book.id !== bookId);
-                renderBooks();
-                saveToLocalStorage();
+            if (confirm('确定要删除该文档吗？')) {
+                // 从后端删除
+                fetch(`/api/delete-pdf/${bookId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        pdfBooks = pdfBooks.filter(book => book.id !== bookId);
+                        renderBooks();
+                        saveToLocalStorage();
+                        alert('文档删除成功！');
+                    } else {
+                        alert('删除失败: ' + (data.error || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    console.error('删除文档失败:', error);
+                    alert('删除失败，请稍后重试');
+                });
             }
         }
 
@@ -1745,8 +1739,21 @@
                         prevBtn.addEventListener('click', handlePrevPage);
                         nextBtn.addEventListener('click', handleNextPage);
                         
+                        // 添加页面跳转功能到PDF阅读器
+                        document.getElementById('pdf-jump-btn').addEventListener('click', () => {
+                            jumpToPdfPage();
+                        });
+                        
                         function handleKeydown(e) {
                             if (!pdfReader.classList.contains('hidden')) {
+                                // 检查焦点是否在备忘录编辑器或其他可能需要箭头键的元素上
+                                const activeElement = document.activeElement;
+                                if (activeElement && (activeElement.id === 'note-content-md' || 
+                                                      activeElement.tagName === 'INPUT' || 
+                                                      activeElement.tagName === 'TEXTAREA')) {
+                                    return; // 不阻止箭头键，让它们在编辑器中正常使用
+                                }
+                                
                                 switch(e.key) {
                                     case 'ArrowLeft':
                                         e.preventDefault();
@@ -1869,7 +1876,26 @@
                 })
                 .then(buffer => {
                     // 使用TextDecoder解码指定编码
-                    const decoder = new TextDecoder(encoding);
+                    let decoder;
+                    // 处理中文编码
+                    if (encoding === 'gb2312') {
+                        // GB2312编码处理，对于不支持的编码尝试使用GBK
+                        try {
+                            decoder = new TextDecoder(encoding);
+                        } catch (e) {
+                            // 如果不支持GB2312，尝试使用GBK
+                            decoder = new TextDecoder('gbk');
+                        }
+                    } else {
+                        // 其他编码直接使用指定编码
+                        try {
+                            decoder = new TextDecoder(encoding);
+                        } catch (e) {
+                            // 如果指定编码不支持，使用UTF-8作为默认编码
+                            decoder = new TextDecoder('utf-8');
+                        }
+                    }
+                    
                     const text = decoder.decode(buffer);
                     txtContent.textContent = text;
                 })
@@ -1912,6 +1938,14 @@
         // 键盘翻页处理
         function handleTxtKeydown(e) {
             if (!document.getElementById('txt-reader-modal').classList.contains('hidden')) {
+                // 检查焦点是否在备忘录编辑器或其他可能需要箭头键的元素上
+                const activeElement = document.activeElement;
+                if (activeElement && (activeElement.id === 'note-content-md' || 
+                                      activeElement.tagName === 'INPUT' || 
+                                      activeElement.tagName === 'TEXTAREA')) {
+                    return; // 不阻止箭头键，让它们在编辑器中正常使用
+                }
+                
                 switch(e.key) {
                     case 'ArrowUp':
                         e.preventDefault();
@@ -1928,7 +1962,7 @@
         // 实际的滚动翻页逻辑
         function scrollTxtPage(direction) {
             const txtReader = document.getElementById('txt-reader');
-            // 滚动高度等于窗口高度，实现“翻页”效果
+            // 滚动高度等于窗口高度，实现"翻页"效果
             const scrollHeight = txtReader.clientHeight; 
 
             txtReader.scrollBy({ top: scrollHeight * direction, behavior: 'smooth' });
@@ -2026,7 +2060,7 @@
                 if (data.success) {
                     bookmarks.push(data.bookmark);
                     renderBookmarks();
-                    saveToLocalStorage(); // 同时更新本地存储
+                    saveToLocalStorage(); // 同步到本地存储
                     titleInput.value = '';
                     urlInput.value = '';
                 } else {
@@ -2049,7 +2083,7 @@
                 if (data.success) {
                     bookmarks = bookmarks.filter(b => b.id !== id);
                     renderBookmarks();
-                    saveToLocalStorage(); // 同时更新本地存储
+                    saveToLocalStorage(); // 同步到本地存储
                 } else {
                     alert('删除失败: ' + data.error);
                 }
@@ -2084,37 +2118,78 @@
             });
         }
 
-
         // ----------------------------------------------------
-        // 其它辅助逻辑
+        // 音乐播放器逻辑
         // ----------------------------------------------------
         
         function initMusic() {
             const playlistIdInput = document.getElementById('netease-playlist-id');
             const orderSelect = document.getElementById('music-order'); 
             
-            const savedPlaylistId = localStorage.getItem('neteasePlaylistId') || '877029680'; 
+            const savedPlaylistUrl = localStorage.getItem('neteasePlaylistUrl') || 'https://music.163.com/playlist?id=877029680'; 
             const savedOrder = localStorage.getItem('musicOrder') || 'list'; 
             
-            playlistIdInput.value = savedPlaylistId;
+            // 从保存的URL中提取ID
+            const savedId = extractPlaylistId(savedPlaylistUrl) || '877029680';
+            playlistIdInput.value = savedPlaylistUrl;  // 显示完整URL
             orderSelect.value = savedOrder; 
 
-            document.getElementById('save-music-setting').addEventListener('click', function() {
-                const playlistId = playlistIdInput.value.trim();
-                const order = orderSelect.value;
+            // 当播放模式改变时，自动保存并更新播放器
+            orderSelect.addEventListener('change', function() {
+                const currentUrl = playlistIdInput.value.trim();
+                const playlistId = extractPlaylistId(currentUrl);
                 
-                if (playlistId && /^\d+$/.test(playlistId)) {
-                    localStorage.setItem('neteasePlaylistId', playlistId);
-                    localStorage.setItem('musicOrder', order);
+                if (playlistId) {
+                    localStorage.setItem('neteasePlaylistUrl', currentUrl);
+                    localStorage.setItem('musicOrder', this.value);
                     
-                    renderMetingTag(playlistId, order);
-                    alert('歌单和播放模式设置已保存，已更新播放器');
-                } else {
-                    alert('请输入有效的网易云歌单ID（仅数字）');
+                    renderMetingTag(playlistId, this.value);
                 }
             });
+
+            document.getElementById('save-music-setting').addEventListener('click', function() {
+                const inputText = playlistIdInput.value.trim();
+                
+                // 尝试从输入中提取ID
+                let playlistId = extractPlaylistId(inputText);
+                
+                if (!playlistId) {
+                    alert('无法从输入中提取到有效的歌单ID，请确保输入的是网易云歌单链接');
+                    return;
+                }
+
+                const order = orderSelect.value;
+                
+                localStorage.setItem('neteasePlaylistUrl', inputText);
+                localStorage.setItem('musicOrder', order);
+                
+                renderMetingTag(playlistId, order);
+                alert('歌单和播放模式设置已保存，已更新播放器');
+            });
             
-            renderMetingTag(savedPlaylistId, savedOrder);
+            // 使用保存的URL初始化播放器
+            const initialPlaylistId = extractPlaylistId(savedPlaylistUrl);
+            renderMetingTag(initialPlaylistId, savedOrder);
+        }
+
+        // 从网易云URL中提取歌单ID的函数
+        function extractPlaylistId(url) {
+            try {
+                // 尝试解析URL
+                const parsedUrl = new URL(url);
+                // 从URL参数中获取id
+                const id = parsedUrl.searchParams.get('id');
+                if (id && /^\d+$/.test(id)) {
+                    return id;
+                }
+            } catch (e) {
+                // 如果URL格式不正确，尝试正则匹配
+                const matches = url.match(/[?&]id=(\d+)/);
+                if (matches && matches[1]) {
+                    return matches[1];
+                }
+            }
+            return null;
         }
 
         function renderMetingTag(playlistId, order = 'list') {
@@ -2139,8 +2214,71 @@
             metingTag.setAttribute('lrc-type', '3');
             
             playerContainer.appendChild(metingTag);
+            
+            // 添加音乐播放器事件处理 - 使用更可靠的事件监听
+            setTimeout(() => {
+                // 等待播放器加载完成
+                const checkAndSetupPlayer = () => {
+                    const metingElements = document.querySelectorAll('meting-js');
+                    if (metingElements.length > 0) {
+                        const metingElement = metingElements[0];
+                        
+                        // 等待APlayer实例创建完成
+                        if (metingElement.aplayer) {
+                            // 上一首
+                            document.getElementById('music-prev')?.addEventListener('click', function() {
+                                metingElement.aplayer.skipBack();
+                            });
+                            
+                            // 下一首
+                            document.getElementById('music-next')?.addEventListener('click', function() {
+                                metingElement.aplayer.skipForward();
+                            });
+                            
+                            // 播放/暂停
+                            const playPauseBtn = document.getElementById('music-play-pause');
+                            if (playPauseBtn) {
+                                playPauseBtn.addEventListener('click', function() {
+                                    if (metingElement.aplayer.audio.paused) {
+                                        metingElement.aplayer.play();
+                                        const iconElement = document.getElementById('play-pause-icon');
+                                        if (iconElement) iconElement.className = 'fa fa-pause';
+                                    } else {
+                                        metingElement.aplayer.pause();
+                                        const iconElement = document.getElementById('play-pause-icon');
+                                        if (iconElement) iconElement.className = 'fa fa-play';
+                                    }
+                                });
+                            }
+                            
+                            // 监听播放状态变化，更新按钮图标
+                            metingElement.aplayer.on('play', function() {
+                                const iconElement = document.getElementById('play-pause-icon');
+                                if (iconElement) iconElement.className = 'fa fa-pause';
+                            });
+                            
+                            metingElement.aplayer.on('pause', function() {
+                                const iconElement = document.getElementById('play-pause-icon');
+                                if (iconElement) iconElement.className = 'fa fa-play';
+                            });
+                        } else {
+                            // 如果播放器还没准备好，稍后再试
+                            setTimeout(checkAndSetupPlayer, 500);
+                        }
+                    } else {
+                        // 如果meting元素还没加载完成，稍后再试
+                        setTimeout(checkAndSetupPlayer, 500);
+                    }
+                };
+                
+                // 开始检查播放器
+                checkAndSetupPlayer();
+            }, 2000); // 延迟2秒确保播放器完全加载
         }
         
+        // ----------------------------------------------------
+        // 游戏逻辑
+        // ----------------------------------------------------
         function initGames() {
             const gameSelectors = document.querySelectorAll('.game-selector');
             gameSelectors.forEach(selector => {
@@ -2160,12 +2298,139 @@
                 });
             });
             
-            initGame1024();
-            initGomoku();
-            
             document.getElementById('upload-game-btn').addEventListener('click', function() {
-                alert('在实际应用中，这里将打开游戏上传界面');
+                gameSelectors.forEach(s => {
+                    s.classList.remove('active', 'bg-primary', 'text-white');
+                    s.classList.add('bg-gray-200', 'hover:bg-gray-300');
+                });
+                this.classList.add('active', 'bg-primary', 'text-white');
+                this.classList.remove('bg-gray-200', 'hover:bg-gray-300');
+                
+                document.querySelectorAll('.game-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                document.getElementById('game-upload').classList.remove('hidden');
+                
+                // 加载自定义游戏列表
+                loadCustomGames();
             });
+            
+            initGame1024();
+            // initMinesweeper(); // 移除，因为我们现在用iframe加载扫雷游戏
+            
+            // 上传自定义游戏
+            document.getElementById('upload-game-submit').addEventListener('click', uploadCustomGame);
+        }
+        
+        function uploadCustomGame() {
+            const nameInput = document.getElementById('game-name');
+            const fileInput = document.getElementById('game-file');
+            
+            const name = nameInput.value.trim();
+            if (!name) {
+                alert('请输入游戏名称');
+                return;
+            }
+            
+            if (!fileInput.files[0]) {
+                alert('请选择游戏文件');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const allowedExtensions = ['.html', '.htm', '.js', '.zip'];
+            const fileExt = file.name.toLowerCase().split('.').pop();
+            if (!allowedExtensions.some(ext => `.${fileExt}` === ext)) {
+                alert('只支持上传HTML、HTM、JS或ZIP格式的游戏文件');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('name', name);
+            
+            fetch('/api/upload-game', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('游戏上传成功！');
+                    nameInput.value = '';
+                    fileInput.value = '';
+                    loadCustomGames();
+                } else {
+                    alert('上传失败: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('上传错误:', error);
+                alert('上传失败，请稍后重试');
+            });
+        }
+        
+        function loadCustomGames() {
+            fetch('/api/get-games')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('custom-games-container');
+                container.innerHTML = '';
+                
+                if (data.games.length === 0) {
+                    container.innerHTML = '<div class="text-gray-500 text-center py-4 col-span-full">暂无自定义游戏</div>';
+                    return;
+                }
+                
+                data.games.forEach(game => {
+                    const gameItem = document.createElement('div');
+                    gameItem.className = 'bg-white border rounded-lg p-4 shadow flex justify-between items-center';
+                    gameItem.innerHTML = `
+                        <div class="flex-1">
+                            <div class="font-bold">${game.name}</div>
+                            <div class="text-xs text-gray-500">${game.upload_date}</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="text-primary hover:text-blue-700" onclick="playCustomGame(${game.id})">
+                                <i class="fa fa-play"></i>
+                            </button>
+                            <button class="text-red-500 hover:text-red-700" onclick="deleteCustomGame(${game.id})">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(gameItem);
+                });
+            })
+            .catch(error => {
+                console.error('加载自定义游戏失败:', error);
+            });
+        }
+        
+        function playCustomGame(gameId) {
+            // 可以在新窗口打开游戏文件
+            window.open(`/uploads/games/${gameId}`, '_blank');
+        }
+        
+        function deleteCustomGame(gameId) {
+            if (confirm('确定要删除这个自定义游戏吗？')) {
+                fetch(`/api/delete-game/${gameId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('游戏删除成功！');
+                        loadCustomGames();
+                    } else {
+                        alert('删除失败: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('删除游戏失败:', error);
+                    alert('删除失败，请稍后重试');
+                });
+            }
         }
         
         function initGame1024() {
@@ -2225,8 +2490,8 @@
                     4: 'bg-amber-100 text-amber-900 font-bold text-3xl',
                     8: 'bg-orange-100 text-orange-900 font-bold text-3xl',
                     16: 'bg-orange-200 text-orange-900 font-bold text-3xl',
-                    32: 'bg-orange-300 text-white font-bold text-3xl',
-                    64: 'bg-orange-400 text-white font-bold text-3xl',
+                    32: 'bg-orange-300 text-orange-900 font-bold text-3xl',
+                    64: 'bg-orange-400 text-orange-900 font-bold text-3xl',
                     128: 'bg-yellow-200 text-yellow-900 font-bold text-4xl',
                     256: 'bg-yellow-300 text-yellow-900 font-bold text-4xl',
                     512: 'bg-yellow-400 text-white font-bold text-4xl',
@@ -2366,9 +2631,19 @@
             }
             
             document.addEventListener('keydown', function(e) {
+                // 只有当1024游戏页面是活动状态时才拦截箭头键
                 if (document.getElementById('game-1024').classList.contains('hidden')) {
                     return;
                 }
+                
+                // 检查焦点是否在备忘录编辑器或其他可能需要箭头键的元素上
+                const activeElement = document.activeElement;
+                if (activeElement && (activeElement.id === 'note-content-md' || 
+                                      activeElement.tagName === 'INPUT' || 
+                                      activeElement.tagName === 'TEXTAREA')) {
+                    return; // 不阻止箭头键，让它们在编辑器中正常使用
+                }
+                
                 switch(e.key) {
                     case 'ArrowUp':
                         e.preventDefault();
@@ -2394,120 +2669,11 @@
             initializeGrid();
         }
         
-        function initGomoku() {
-            const boardSize = 15;
-            let board = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
-            let currentPlayer = 1;
-            const boardElement = document.getElementById('gomoku-board');
-            
-            function setBoardSize() {
-                const containerWidth = boardElement.parentElement.clientWidth;
-                const cellSize = Math.floor((containerWidth - 28) / boardSize);
-                boardElement.style.maxWidth = `${cellSize * boardSize + 28}px`;
-                boardElement.style.margin = '0 auto';
-            }
-            
-            function initializeBoard() {
-                board = Array(boardSize).fill().map(() => Array(boardSize).fill(0));
-                currentPlayer = 1;
-                renderBoard();
-                updateCurrentPlayer();
-                setBoardSize();
-            }
-            
-            function renderBoard() {
-                boardElement.innerHTML = '';
-                for (let i = 0; i < boardSize; i++) {
-                    for (let j = 0; j < boardSize; j++) {
-                        const cell = document.createElement('div');
-                        cell.className = 'board-cell';
-                        cell.setAttribute('data-row', i);
-                        cell.setAttribute('data-col', j);
-                        
-                        if (board[i][j] === 1) {
-                            cell.innerHTML = '<div class="stone black"></div>';
-                        } else if (board[i][j] === 2) {
-                            cell.innerHTML = '<div class="stone white"></div>';
-                        }
-                        cell.addEventListener('click', placeStone);
-                        boardElement.appendChild(cell);
-                    }
-                }
-            }
-            
-            function updateCurrentPlayer() {
-                document.getElementById('current-player').textContent = currentPlayer === 1 ? '黑方' : '白方';
-                const stoneDisplay = document.querySelector('#gomoku .stone');
-                if (stoneDisplay) {
-                    stoneDisplay.classList.remove('black', 'white');
-                    stoneDisplay.classList.add(currentPlayer === 1 ? 'black' : 'white');
-                }
-            }
-            
-            function placeStone(e) {
-                const row = parseInt(e.currentTarget.getAttribute('data-row'));
-                const col = parseInt(e.currentTarget.getAttribute('data-col'));
-                
-                if (board[row][col] !== 0) {
-                    return;
-                }
-                
-                board[row][col] = currentPlayer;
-                renderBoard();
-                
-                if (checkWin(row, col)) {
-                    setTimeout(() => {
-                        alert(`${currentPlayer === 1 ? '黑方' : '白方'}获胜！`);
-                        initializeBoard();
-                    }, 100);
-                    return;
-                }
-                
-                currentPlayer = currentPlayer === 1 ? 2 : 1;
-                updateCurrentPlayer();
-            }
-            
-            function checkWin(row, col) {
-                const player = board[row][col];
-                const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
-                
-                for (const [dx, dy] of directions) {
-                    let count = 1;
-                    
-                    for (let i = 1; i <= 4; i++) {
-                        const newRow = row + i * dx;
-                        const newCol = col + i * dy;
-                        
-                        if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize && board[newRow][newCol] === player) {
-                            count++;
-                        } else {
-                            break;
-                        }
-                    }
-                    
-                    for (let i = 1; i <= 4; i++) {
-                        const newRow = row - i * dx;
-                        const newCol = col - i * dy;
-                        
-                        if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize && board[newRow][newCol] === player) {
-                            count++;
-                        } else {
-                            break;
-                        }
-                    }
-                    
-                    if (count >= 5) {
-                        return true;
-                    }
-                }
-                return false;
-            }
-            
-            window.addEventListener('resize', setBoardSize);
-            document.getElementById('restart-gomoku').addEventListener('click', initializeBoard);
-            initializeBoard();
-        }
+
         
+        // ----------------------------------------------------
+        // 备忘录逻辑
+        // ----------------------------------------------------
         function initNotes() {
             // 从后端加载备忘录
             fetch('/api/notes')
@@ -2532,11 +2698,14 @@
             document.getElementById('create-note-btn').addEventListener('click', function() {
                 currentNoteId = null;
                 document.getElementById('note-title').value = '';
-                document.getElementById('note-content').innerHTML = '在此输入备忘录内容...';
+                document.getElementById('note-content-md').value = '';
                 document.getElementById('notes-list').classList.add('hidden');
                 document.getElementById('note-editor').classList.remove('hidden');
                 document.getElementById('note-title').focus();
                 document.getElementById('delete-note-btn').classList.add('hidden');
+                
+                // 清空预览区域
+                document.getElementById('note-preview').innerHTML = '<div class="prose max-w-none">在此输入 Markdown 内容以预览...</div>';
             });
             
             document.getElementById('close-note-btn').addEventListener('click', function() {
@@ -2569,74 +2738,68 @@
                         
             document.getElementById('save-note-btn').addEventListener('click', saveNote);
             
-            document.getElementById('format-bold').addEventListener('click', function() {
-                document.execCommand('bold', false, null);
-                document.getElementById('note-content').focus();
-            });
+
             
-            document.getElementById('format-italic').addEventListener('click', function() {
-                document.execCommand('italic', false, null);
-                document.getElementById('note-content').focus();
-            });
+
             
-            document.getElementById('format-underline').addEventListener('click', function() {
-                document.execCommand('underline', false, null);
-                document.getElementById('note-content').focus();
-            });
-            
-            document.getElementById('format-heading').addEventListener('click', function() {
-                document.execCommand('formatBlock', false, '<h3>');
-                document.getElementById('note-content').focus();
-            });
-            
-            document.getElementById('format-list-ul').addEventListener('click', function() {
-                document.execCommand('insertUnorderedList', false, null);
-                document.getElementById('note-content').focus();
-            });
-            
-            document.getElementById('format-list-ol').addEventListener('click', function() {
-                document.execCommand('insertOrderedList', false, null);
-                document.getElementById('note-content').focus();
-            });
-            
-            document.getElementById('format-link').addEventListener('click', function() {
-                const url = prompt('请输入链接地址:');
-                if (url) {
-                    document.execCommand('createLink', false, url);
+            // 备忘录内容变化时自动保存
+            document.getElementById('note-content-md').addEventListener('input', function() {
+                if (currentNoteId) {
+                    // 自动保存，每1秒最多保存一次
+                    clearTimeout(window.noteAutoSaveTimer);
+                    window.noteAutoSaveTimer = setTimeout(() => {
+                        saveNote();
+                    }, 1000);
                 }
-                document.getElementById('note-content').focus();
+                // 实时预览
+                renderMarkdownPreview(this.value);
             });
             
-            document.getElementById('insert-image').addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file && file.type.startsWith('image/')) {
-                    const reader = new FileReader();
+            // 添加箭头键导航功能
+            document.getElementById('note-content-md').addEventListener('keydown', function(e) {
+                // 处理箭头键，但不影响其他功能
+                // 这些键在textarea中默认具有光标移动功能，我们不需要特别处理
+                // 但可以添加一些增强功能，比如Tab键缩进
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const start = this.selectionStart;
+                    const end = this.selectionEnd;
                     
-                    reader.onload = function(event) {
-                        const img = document.createElement('img');
-                        img.src = event.target.result;
-                        img.className = 'max-w-full h-auto my-2';
-                        
-                        const selection = window.getSelection();
-                        if (selection.rangeCount) {
-                            const range = selection.getRangeAt(0);
-                            range.deleteContents();
-                            range.insertNode(img);
-                            
-                            range.setStartAfter(img);
-                            range.setEndAfter(img);
-                            selection.removeAllRanges();
-                            selection.addRange(range);
-                        } else {
-                            document.getElementById('note-content').appendChild(img);
-                        }
-                    };
+                    // 在光标位置插入两个空格作为缩进
+                    this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
                     
-                    reader.readAsDataURL(file);
+                    // 移动光标到插入的空格之后
+                    this.selectionStart = this.selectionEnd = start + 2;
                 }
-                this.value = '';
-                document.getElementById('note-content').focus();
             });
+            
+            // 标题变化时更新，如果当前没有标题则使用内容前几个字
+            document.getElementById('note-title').addEventListener('input', function() {
+                if (!currentNoteId && this.value === '') {
+                    const content = document.getElementById('note-content-md').value.substring(0, 5).trim();
+                    if (content) {
+                        this.value = content;
+                    }
+                }
+            });
+            
+            // 为预览按钮添加事件监听器，需要检查元素是否存在
+            const previewBtn = document.getElementById('preview-note-btn');
+            if (previewBtn) {
+                previewBtn.addEventListener('click', function() {
+                    const content = document.getElementById('note-content-md')?.value;
+                    if (content) {
+                        renderMarkdownPreview(content);
+                    }
+                });
+            }
+            
+            const saveBtn = document.getElementById('save-note-btn');
+            if (saveBtn) {
+                saveBtn.addEventListener('click', function() {
+                    saveNote();
+                });
+            }
             
             document.addEventListener('keydown', function(e) {
                 if (e.ctrlKey && e.key === 's') {
@@ -2644,15 +2807,6 @@
                     if (!document.getElementById('note-editor').classList.contains('hidden')) {
                         saveNote();
                     }
-                } else if (e.ctrlKey && e.key === 'b') {
-                    e.preventDefault();
-                    document.execCommand('bold', false, null);
-                } else if (e.ctrlKey && e.key === 'i') {
-                    e.preventDefault();
-                    document.execCommand('italic', false, null);
-                } else if (e.ctrlKey && e.key === 'u') {
-                    e.preventDefault();
-                    document.execCommand('underline', false, null);
                 }
             });
             
@@ -2660,13 +2814,17 @@
         }
         
         function saveNote() {
-            const title = document.getElementById('note-title').value.trim();
-            const content = document.getElementById('note-content').innerHTML.trim();
+            const titleEl = document.getElementById('note-title');
+            const contentEl = document.getElementById('note-content-md');
             
+            let title = titleEl.value.trim();
+            const content = contentEl.value.trim();
+            
+            // 如果标题为空，使用内容的前5个字符作为标题
             if (!title) {
-                alert('请输入备忘录标题');
-                document.getElementById('note-title').focus();
-                return;
+                const plainText = content.substring(0, 5);
+                title = plainText || '未命名备忘录';
+                titleEl.value = title;
             }
 
             const noteData = { title, content };
@@ -2709,6 +2867,7 @@
                         currentNoteId = data.note.id;
                         renderNotes();
                         updateTodayStats();
+                        document.getElementById('delete-note-btn').classList.remove('hidden');
                         showSaveSuccess(saveButton, originalText);
                     } else {
                         throw new Error(data.error || '创建失败');
@@ -2737,6 +2896,51 @@
             }, 2000);
         }
         
+        // Markdown 编辑辅助函数
+        function insertMarkdownSyntax(before, after, placeholder) {
+            const textarea = document.getElementById('note-content-md');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+            
+            const textToInsert = selectedText || placeholder;
+            const newText = textarea.value.substring(0, start) + before + textToInsert + after + textarea.value.substring(end);
+            
+            textarea.value = newText;
+            textarea.selectionStart = start + before.length;
+            textarea.selectionEnd = start + before.length + textToInsert.length;
+            textarea.focus();
+            
+            // 触发input事件以更新预览
+            textarea.dispatchEvent(new Event('input'));
+        }
+        
+        function insertAtCursor(elementId, text) {
+            const element = document.getElementById(elementId);
+            const start = element.selectionStart;
+            const end = element.selectionEnd;
+            const before = element.value.substring(0, start);
+            const after = element.value.substring(end);
+            
+            element.value = before + text + after;
+            element.selectionStart = element.selectionEnd = start + text.length;
+            element.focus();
+            
+            // 触发input事件以更新预览
+            element.dispatchEvent(new Event('input'));
+        }
+        
+        function renderMarkdownPreview(content) {
+            // 使用marked.js进行渲染
+            if (typeof marked !== 'undefined') {
+                const html = marked.parse(content);
+                document.getElementById('note-preview').innerHTML = `<div class="prose max-w-none">${html}</div>`;
+            } else {
+                // 如果marked.js不可用，简单显示转换
+                document.getElementById('note-preview').innerHTML = `<div class="prose max-w-none">${content}</div>`;
+            }
+        }
+        
         function renderNotes() {
             const container = document.getElementById('notes-list');
             container.innerHTML = '';
@@ -2758,9 +2962,8 @@
             }
             
             notes.forEach(note => {
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = note.content;
-                const plainText = tempDiv.textContent || '';
+                // 对于Markdown内容，显示前100个字符
+                const plainText = note.content.substring(0, 100);
                 
                 const noteElement = document.createElement('div');
                 noteElement.className = 'note-card bg-white border border-gray-200 rounded-lg overflow-hidden card-shadow cursor-pointer';
@@ -2768,37 +2971,38 @@
                 noteElement.innerHTML = `
                     <div class="p-4">
                         <h3 class="font-bold text-lg mb-2 truncate">${note.title}</h3>
-                        <p class="text-gray-600 text-sm line-clamp-3 mb-3">${plainText}</p>
+                        <p class="text-gray-600 text-sm line-clamp-3 mb-3">${plainText}${note.content.length > 100 ? '...' : ''}</p>
                         <p class="text-xs text-gray-400">最后编辑：${note.last_edited}</p>
                     </div>
                 `;
                 
-            // 在 renderNotes 函数中，替换原点击事件绑定代码
-            noteElement.addEventListener('click', function() {
-                // 修复：直接获取字符串ID，不进行parseInt转换（后端返回UUID是字符串）
-                const noteId = this.getAttribute('data-id');
-                const note = notes.find(n => n.id === noteId); // 字符串比较
-                
-                if (note) {
-                    currentNoteId = noteId; // 保持ID为字符串类型
-                    const titleInput = document.getElementById('note-title');
-                    const contentEl = document.getElementById('note-content');
-                    const notesList = document.getElementById('notes-list');
-                    const noteEditor = document.getElementById('note-editor');
-                    const deleteBtn = document.getElementById('delete-note-btn');
+                // 修改点击事件以适应Markdown编辑器
+                noteElement.addEventListener('click', function() {
+                    const noteId = this.getAttribute('data-id');
+                    const note = notes.find(n => n.id === noteId); // 字符串比较
                     
-                    // 再次检查元素是否存在，避免空引用
-                    if (titleInput && contentEl && notesList && noteEditor && deleteBtn) {
-                        titleInput.value = note.title;
-                        contentEl.innerHTML = note.content;
-                        notesList.classList.add('hidden');
-                        noteEditor.classList.remove('hidden');
-                        deleteBtn.classList.remove('hidden');
-                    } else {
-                        console.error('备忘录编辑所需的DOM元素不存在');
+                    if (note) {
+                        currentNoteId = noteId; // 保持ID为字符串类型
+                        const titleInput = document.getElementById('note-title');
+                        const contentMdEl = document.getElementById('note-content-md');
+                        const previewEl = document.getElementById('note-preview');
+                        const notesList = document.getElementById('notes-list');
+                        const noteEditor = document.getElementById('note-editor');
+                        const deleteBtn = document.getElementById('delete-note-btn');
+                        
+                        // 再次检查元素是否存在，避免空引用
+                        if (titleInput && contentMdEl && previewEl && notesList && noteEditor && deleteBtn) {
+                            titleInput.value = note.title;
+                            contentMdEl.value = note.content;
+                            renderMarkdownPreview(note.content); // 渲染Markdown预览
+                            notesList.classList.add('hidden');
+                            noteEditor.classList.remove('hidden');
+                            deleteBtn.classList.remove('hidden');
+                        } else {
+                            console.error('备忘录编辑所需的DOM元素不存在');
+                        }
                     }
-                }
-            });
+                });
                 container.appendChild(noteElement);
             });
         }
@@ -2808,21 +3012,44 @@
 
         // 初始化对话功能（扩展原initChat函数）
         function initChat() {
-            // 原有的API密钥保存逻辑
+            // 加载AI配置
+            fetch('/api/ai-config')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.config) {
+                        document.getElementById('qwen-api-key').value = data.config.api_key;
+                        document.getElementById('model-type').value = data.config.model_type;
+                    }
+                })
+                .catch(() => console.log('未找到AI配置'));
+            
             document.getElementById('save-api-key').addEventListener('click', function() {
                 const apiKey = document.getElementById('qwen-api-key').value;
-                if (apiKey) {
-                    localStorage.setItem('qwenApiKey', apiKey);
-                    alert('API密钥已保存');
-                } else {
+                const modelType = document.getElementById('model-type').value;
+                
+                if (!apiKey) {
                     alert('请输入有效的API密钥');
+                    return;
                 }
+                
+                fetch('/api/ai-config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({api_key: apiKey, model_type: modelType})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('API密钥和模型类型已保存');
+                    } else {
+                        alert('保存失败: ' + (data.error || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    console.error('保存配置失败:', error);
+                    alert('保存失败，请稍后重试');
+                });
             });
-            
-            const savedApiKey = localStorage.getItem('qwenApiKey');
-            if (savedApiKey) {
-                document.getElementById('qwen-api-key').value = savedApiKey;
-            }
             
             // 新对话按钮事件
             document.getElementById('new-conversation').addEventListener('click', createNewConversation);
@@ -2830,12 +3057,13 @@
             // 加载对话列表
             loadConversations();
             
-            // 修改表单提交事件处理（约2595-2628行）
+            // 修改表单提交事件处理
             document.getElementById('chat-form').addEventListener('submit', function(e) {
                 e.preventDefault();
                 const input = document.getElementById('chat-input');
                 const message = input.value.trim();
                 const apiKey = document.getElementById('qwen-api-key').value;
+                const modelType = document.getElementById('model-type').value;
                 const statusElement = document.getElementById('chat-status');
                 
                 if (!message) return;
@@ -2852,10 +3080,10 @@
                 // 如果没有活跃对话，创建新对话并使用消息内容作为标题
                 if (!currentConversationId) {
                     createNewConversation(title).then(convId => {  // 传入标题
-                        sendMessageToConversation(convId, message, apiKey, input, statusElement);
+                        sendMessageToConversation(convId, message, apiKey, modelType, input, statusElement);
                     });
                 } else {
-                    sendMessageToConversation(currentConversationId, message, apiKey, input, statusElement);
+                    sendMessageToConversation(currentConversationId, message, apiKey, modelType, input, statusElement);
                 }
             });
         }
@@ -2962,7 +3190,7 @@
         }
 
         // 发送消息到当前对话
-        function sendMessageToConversation(convId, message, apiKey, input, statusElement) {
+        function sendMessageToConversation(convId, message, apiKey, modelType, input, statusElement) {
             // 添加用户消息到UI
             addChatMessage(message, 'user');
             input.value = '';
@@ -2974,7 +3202,7 @@
             // 保存用户消息到后端（后续逻辑保持不变）
             saveMessageToConversation(convId, 'user', message)
                 .then(() => {
-                    return callQwenApi(message, apiKey);
+                    return callQwenApi(message, apiKey, modelType);
                 })
                 .then(aiResponse => {
                     addChatMessage(aiResponse, 'ai');
@@ -2988,16 +3216,6 @@
                     scrollChatToBottom();
                     loadConversations();
                 });
-        }
-
-        // 更新对话标题UI
-        function updateConversationTitle(convId, title) {
-            // 假设导航按钮的类名为 'chat-nav-btn'
-            const chatNavBtn = document.querySelector('.chat-nav-btn');
-            if (chatNavBtn) {
-                chatNavBtn.textContent = title; // 更新导航按钮显示的标题
-            }
-            // 若有对话列表，也可同步更新列表中的对应项
         }
 
         // 保存消息到对话
@@ -3021,12 +3239,12 @@
         }
 
         // 修改原callQwenApi函数（保持之前的实现，使用后端代理）
-        function callQwenApi(message, apiKey) {
+        function callQwenApi(message, apiKey, modelType) {
             return new Promise((resolve, reject) => {
                 fetch('/api/call-qwen', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({message, api_key: apiKey})
+                    body: JSON.stringify({message, api_key: apiKey, model_type: modelType})
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -3067,37 +3285,6 @@
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
         
-        function updateTodayStats() {
-            const today = new Date().toISOString().split('T')[0];
-            const todayRecords = workRecords.filter(record => record.date === today);
-            
-            let totalWorkHours = 0;
-            todayRecords.forEach(record => {
-                totalWorkHours += record.hours;
-            });
-            
-            const workHours = Math.floor(totalWorkHours);
-            const workMinutes = Math.round((totalWorkHours - workHours) * 60);
-            
-            // 修复1：检查元素是否存在再操作
-            const todayWorkedEl = document.getElementById('today-worked');
-            if (todayWorkedEl) {
-                todayWorkedEl.textContent = `${workHours}小时${workMinutes}分钟`;
-            }
-            
-            // 修复2：检查"今日阅读"元素是否存在（若HTML中没有该元素可注释此句）
-            const todayReadEl = document.getElementById('today-read');
-            if (todayReadEl) {
-                todayReadEl.textContent = "0篇"; // 后续可完善阅读统计逻辑
-            }
-            
-            const todayNotes = notes.filter(note => note.last_edited?.startsWith(today));
-            const todayNotesEl = document.getElementById('today-notes');
-            if (todayNotesEl) {
-                todayNotesEl.textContent = `${todayNotes.length}篇`;
-            }
-        }
-                
         // 保存到本地存储（仅保留必要数据，作为后端备份）
         function saveToLocalStorage() {
             const data = {
@@ -3105,6 +3292,7 @@
                 workGoalTime: workGoalTime,
                 remainingTime: remainingTime,
                 isTimerRunning: isTimerRunning,
+                totalSecondsWorked: totalSecondsWorked,  // 保存总工作秒数（变量b）
                 // 核心数据仅作为缓存（后端为主）
                 workRecords: workRecords,
                 pdfBooks: pdfBooks,
@@ -3113,6 +3301,9 @@
             };
             
             localStorage.setItem('workspaceData', JSON.stringify(data));
+            // 记录保存的日期
+            const today = new Date().toISOString().split('T')[0];
+            localStorage.setItem('lastSavedDate', today);
         }
 
         
@@ -3127,8 +3318,8 @@
                         updateTodayStats();
                     }
                 })
-                .catch(() => {
-                    console.log('后端工作记录加载失败，使用本地缓存');
+                .catch((error) => {
+                    console.error('后端工作记录加载失败:', error);
                 });
         }
 
@@ -3144,6 +3335,51 @@
             initBookmarks(); 
             initWorkRecords(); // 新增：优先从后端加载工作记录
             loadFromLocalStorage(); // 最后加载本地缓存补充
+        });
+        
+        // 页面关闭前保存当日工作时间到后端
+        window.addEventListener('beforeunload', function() {
+            // 获取今天的总工作时间
+            const today = new Date().toISOString().split('T')[0];
+            const totalHours = totalSecondsWorked / 3600;
+            
+            // 如果今天有工作时间，保存到后端
+            if (totalHours > 0) {
+                const now = new Date();
+                const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                
+                const record = {
+                    date: today,
+                    time: timeString,
+                    hours: parseFloat(totalHours.toFixed(2)),
+                    manual: false  // 表示这是当天的累计工作时间，不是手动添加的
+                };
+                
+                // 先删除当天的非手动记录（每天只保留一条总的记录）
+                const todayRecords = workRecords.filter(r => r.date === today && r.manual === false);
+                todayRecords.forEach(todayRecord => {
+                    fetch(`/api/work-records/${todayRecord.id}`, {
+                        method: 'DELETE'
+                    })
+                    .catch(error => console.error('删除旧的今日工作记录失败:', error));
+                });
+                
+                // 然后添加新的记录
+                fetch('/api/work-records', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(record)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('今日工作记录保存成功');
+                    } else {
+                        console.error('保存失败:', data.error);
+                    }
+                })
+                .catch(error => console.error('保存今日工作记录失败:', error));
+            }
         });
                 
     </script>

@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 import time  # 导入 time 模块用于时间戳
 import codecs
 import json
-from .models import db, PDFBook, Conversation, Message, Bookmark, Note, WorkRecord  # 更新导入
+from .models import db, PDFBook, Conversation, Message, Bookmark, Note, WorkRecord, Game, AIConfig  # 更新导入
 from flask_migrate import Migrate  # 新增导入
 
 # 加载环境变量
@@ -28,11 +28,13 @@ app = Flask(
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads')
 app.config['PDF_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'pdfs')
 app.config['IMAGE_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'images')
+app.config['GAME_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'games')
 app.config['SECRET_KEY'] = 'your-secret-key-here' 
 
 # 创建上传目录
 os.makedirs(app.config['PDF_FOLDER'], exist_ok=True)
 os.makedirs(app.config['IMAGE_FOLDER'], exist_ok=True)
+os.makedirs(app.config['GAME_FOLDER'], exist_ok=True)
 
 # 初始化数据库（只需要一次）
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///freework.db'
@@ -76,11 +78,27 @@ def upload_pdf():
             encoding = request.form.get('encoding', 'utf-8')
             # 读取文件内容并转换为UTF-8编码保存
             content = file.read()
-            # 尝试用指定编码解码
-            try:
-                text = content.decode(encoding)
-            except UnicodeDecodeError:
-                # 如果解码失败，尝试使用utf-8并忽略错误
+            
+            # 根据编码类型尝试不同的解码方式
+            text = ""
+            decode_success = False
+            
+            # 如果是中文编码类型，尝试常用的中文编码
+            if encoding in ['gbk', 'gb2312', 'gb18030']:
+                encodings_to_try = [encoding, 'gb18030', 'gbk', 'gb2312', 'utf-8']
+            else:
+                encodings_to_try = [encoding, 'utf-8', 'gbk', 'gb2312', 'gb18030']
+            
+            for enc in encodings_to_try:
+                try:
+                    text = content.decode(enc)
+                    decode_success = True
+                    break
+                except UnicodeDecodeError:
+                    continue
+            
+            if not decode_success:
+                # 如果所有编码都失败，使用utf-8并忽略错误
                 text = content.decode('utf-8', errors='ignore')
             
             # 以UTF-8编码写入文件
@@ -437,13 +455,113 @@ def add_work_record():
 @app.route('/api/work-records/<int:record_id>', methods=['DELETE'])
 def delete_work_record(record_id):
     try:
-        record = WorkRecord.query.get_or_404(record_id)
+        record = WorkRecord.query.get(record_id)
+        if record is None:
+            return jsonify({'success': False, 'error': '记录不存在'}), 404
+        
         db.session.delete(record)
         db.session.commit()
         return jsonify({'success': True})
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
+
+# 扫雷游戏页面路由
+@app.route('/games/minesweeper')
+def minesweeper():
+    return render_template('games/minesweeper.html')
+
+# 游戏上传接口
+@app.route('/api/upload-game', methods=['POST'])
+def upload_game():
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': '未找到文件'})
+    
+    file = request.files['file']
+    name = request.form.get('name', '未命名游戏')
+    
+    if file.filename == '':
+        return jsonify({'success': False, 'error': '未选择文件'})
+    
+    # 验证文件类型（仅HTML/JS/CSS等）
+    allowed_extensions = ['.html', '.htm', '.js', '.css', '.zip']
+    file_ext = os.path.splitext(file.filename)[1].lower()
+    if file_ext not in allowed_extensions:
+        return jsonify({'success': False, 'error': '文件格式错误，仅支持HTML、JS、CSS或ZIP文件'})
+        
+    # 构造文件名
+    safe_name = ''.join(c for c in name if c.isalnum() or c in (' ', '_', '-')).strip().replace(' ', '_')
+    if not safe_name:
+        safe_name = 'untitled'
+        
+    filename = f"{safe_name}_{int(time.time())}{file_ext}"
+    file_path = os.path.join(app.config['GAME_FOLDER'], filename)
+    
+    try:
+        file.save(file_path)
+    except Exception as e:
+        app.logger.error(f'游戏文件保存失败: {str(e)}')
+        return jsonify({'success': False, 'error': f'文件保存失败: {str(e)}'})
+    
+    relative_path = filename 
+    
+    new_game = Game(name=name, file_path=relative_path, game_type='custom')
+    db.session.add(new_game)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'game': new_game.to_dict()})
+
+# 获取所有游戏列表
+@app.route('/api/get-games', methods=['GET'])
+def get_games():
+    games = Game.query.all()
+    return jsonify({'games': [game.to_dict() for game in games]})
+
+# 删除游戏
+@app.route('/api/delete-game/<int:game_id>', methods=['DELETE'])
+def delete_game(game_id):
+    game = Game.query.get_or_404(game_id)
+    file_path = os.path.join(app.config['GAME_FOLDER'], game.file_path) 
+    
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except Exception as e:
+            return jsonify({'success': False, 'error': f'文件删除失败：{str(e)}'})
+    
+    db.session.delete(game)
+    db.session.commit()
+    return jsonify({'success': True})
+
+# 获取/保存AI配置
+@app.route('/api/ai-config', methods=['GET', 'POST'])
+def ai_config():
+    if request.method == 'POST':
+        data = request.json
+        api_key = data.get('api_key')
+        model_type = data.get('model_type', 'qwen-turbo')
+        
+        if not api_key:
+            return jsonify({'success': False, 'error': 'API密钥不能为空'}), 400
+        
+        # 检查是否已有配置，如果有则更新，否则创建新配置
+        config = AIConfig.query.first()
+        if config:
+            config.api_key = api_key
+            config.model_type = model_type
+        else:
+            config = AIConfig(api_key=api_key, model_type=model_type)
+            db.session.add(config)
+        
+        db.session.commit()
+        return jsonify({'success': True, 'config': config.to_dict()})
+    
+    else:  # GET请求
+        config = AIConfig.query.first()
+        if config:
+            return jsonify({'success': True, 'config': config.to_dict()})
+        else:
+            return jsonify({'success': True, 'config': None})
 
 if __name__ == '__main__':
     with app.app_context():

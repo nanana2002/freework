@@ -105,3 +105,37 @@ class WorkRecord(db.Model):
             'manual': self.manual,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S')
         }
+
+# 新增游戏模型
+class Game(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    file_path = db.Column(db.String(500), nullable=False)  # 存储游戏文件路径
+    game_type = db.Column(db.String(20), default='custom')  # 'custom' 或其他类型
+    upload_date = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'file_path': self.file_path,
+            'game_type': self.game_type,
+            'upload_date': self.upload_date.strftime('%Y-%m-%d %H:%M')
+        }
+
+# 新增AI对话设置模型
+class AIConfig(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    api_key = db.Column(db.String(200), nullable=False)
+    model_type = db.Column(db.String(50), default='qwen-turbo')  # 模型类型
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'api_key': self.api_key,
+            'model_type': self.model_type,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M'),
+            'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M')
+        }
