@@ -433,13 +433,17 @@ def add_work_record():
         'record': new_record.to_dict()
     })
 
-# 工作记录接口 - 删除记录
+
 @app.route('/api/work-records/<int:record_id>', methods=['DELETE'])
 def delete_work_record(record_id):
-    record = WorkRecord.query.get_or_404(record_id)
-    db.session.delete(record)
-    db.session.commit()
-    return jsonify({'success': True})
+    try:
+        record = WorkRecord.query.get_or_404(record_id)
+        db.session.delete(record)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     with app.app_context():

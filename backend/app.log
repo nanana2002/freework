@@ -7,23 +7,35 @@
 [33mPress CTRL+C to quit[0m
  * Restarting with stat
  * Debugger is active!
- * Debugger PIN: 458-095-237
-127.0.0.1 - - [03/Nov/2025 23:28:06] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [03/Nov/2025 23:28:06] "[36mGET /static/icons/file-earmark-pdf.svg HTTP/1.1[0m" 304 -
-127.0.0.1 - - [03/Nov/2025 23:28:06] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
-127.0.0.1 - - [03/Nov/2025 23:28:08] "GET /api/get-pdfs HTTP/1.1" 200 -
-127.0.0.1 - - [03/Nov/2025 23:28:08] "GET /api/notes HTTP/1.1" 200 -
-127.0.0.1 - - [03/Nov/2025 23:28:08] "GET /api/bookmarks HTTP/1.1" 200 -
-127.0.0.1 - - [03/Nov/2025 23:28:08] "GET /api/work-records HTTP/1.1" 200 -
-127.0.0.1 - - [03/Nov/2025 23:28:08] "GET /api/conversations HTTP/1.1" 200 -
-127.0.0.1 - - [03/Nov/2025 23:28:16] "POST /api/work-records HTTP/1.1" 200 -
-127.0.0.1 - - [03/Nov/2025 23:28:20] "POST /api/work-records HTTP/1.1" 200 -
-127.0.0.1 - - [03/Nov/2025 23:28:34] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [03/Nov/2025 23:28:34] "[36mGET /static/icons/file-earmark-pdf.svg HTTP/1.1[0m" 304 -
-127.0.0.1 - - [03/Nov/2025 23:28:34] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
-127.0.0.1 - - [03/Nov/2025 23:28:36] "GET /api/get-pdfs HTTP/1.1" 200 -
-127.0.0.1 - - [03/Nov/2025 23:28:36] "GET /api/notes HTTP/1.1" 200 -
-127.0.0.1 - - [03/Nov/2025 23:28:36] "GET /api/work-records HTTP/1.1" 200 -
-127.0.0.1 - - [03/Nov/2025 23:28:36] "GET /api/bookmarks HTTP/1.1" 200 -
-127.0.0.1 - - [03/Nov/2025 23:28:36] "GET /api/conversations HTTP/1.1" 200 -
-127.0.0.1 - - [03/Nov/2025 23:29:39] "POST /api/notes HTTP/1.1" 200 -
+ * Debugger PIN: 127-026-565
+127.0.0.1 - - [04/Nov/2025 14:37:27] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:37:27] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+127.0.0.1 - - [04/Nov/2025 14:37:27] "[36mGET /static/icons/file-earmark-pdf.svg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [04/Nov/2025 14:37:30] "GET /api/bookmarks HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:37:30] "GET /api/get-pdfs HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:37:30] "GET /api/work-records HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:37:30] "GET /api/notes HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:37:30] "GET /api/conversations HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:37:34] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:37:34] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+127.0.0.1 - - [04/Nov/2025 14:37:34] "[36mGET /static/icons/file-earmark-pdf.svg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [04/Nov/2025 14:37:53] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:37:53] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+127.0.0.1 - - [04/Nov/2025 14:37:53] "[36mGET /static/icons/file-earmark-pdf.svg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [04/Nov/2025 14:37:55] "GET /api/get-pdfs HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:37:55] "GET /api/bookmarks HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:37:55] "GET /api/notes HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:37:55] "GET /api/work-records HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:37:55] "GET /api/conversations HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:37:59] "DELETE /api/work-records/1 HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:38:00] "DELETE /api/work-records/2 HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:38:02] "POST /api/work-records HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:38:08] "POST /api/work-records HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:40:50] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:40:50] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+127.0.0.1 - - [04/Nov/2025 14:40:50] "[36mGET /static/icons/file-earmark-pdf.svg HTTP/1.1[0m" 304 -
+127.0.0.1 - - [04/Nov/2025 14:40:51] "GET /api/get-pdfs HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:40:51] "GET /api/notes HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:40:51] "GET /api/work-records HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:40:51] "GET /api/bookmarks HTTP/1.1" 200 -
+127.0.0.1 - - [04/Nov/2025 14:40:51] "GET /api/conversations HTTP/1.1" 200 -

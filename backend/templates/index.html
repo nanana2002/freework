@@ -56,14 +56,6 @@
             min-height: 100vh;
         }
         
-        /* 倒计时悬浮窗样式 */
-        #timer-widget {
-            transition: all 0.3s ease;
-            z-index: 50;
-            max-width: 380px;
-            width: 100%;
-        }
-        
         /* 页面切换动画 */
         .page {
             display: none;
@@ -203,48 +195,6 @@
 </head>
 
 <body class="bg-gray-50 text-gray-800">
-    <div id="timer-widget" class="fixed bottom-4 right-4 timer-hidden glass rounded-xl p-4 card-shadow">
-        <div class="flex justify-between items-center mb-2">
-            <h3 class="font-bold text-lg">工作倒计时</h3>
-            <button id="minimize-timer" class="text-gray-600 hover:text-gray-900">
-                <i class="fa fa-window-minimize"></i>
-            </button>
-        </div>
-        <div id="timer-content">
-            <div class="flex flex-wrap justify-between items-center gap-3">
-                <div>
-                    <p class="text-sm text-gray-600">今日工作时长</p>
-                    <div class="flex items-center mt-1">
-                        <input type="number" id="work-hours" value="7" min="0.5" step="0.5" 
-                               class="w-16 border rounded p-1 text-center mr-2">
-                        <span>小时</span>
-                    </div>
-                </div>
-                <div class="text-center">
-                    <p class="text-sm text-gray-600">剩余时间</p>
-                    <p id="countdown" class="text-2xl font-bold">07:00:00</p>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600">预计下班时间</p>
-                    <p id="end-time" class="font-medium">19:49</p>
-                </div>
-            </div>
-            <div class="flex justify-center mt-3 gap-3">
-                <button id="start-timer" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition">
-                    <i class="fa fa-play mr-1"></i> 开始
-                </button>
-                <button id="pause-timer" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg transition hidden">
-                    <i class="fa fa-pause mr-1"></i> 暂停
-                </button>
-                <button id="reset-timer" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition">
-                    <i class="fa fa-refresh mr-1"></i> 重置
-                </button>
-            </div>
-        </div>
-        <div id="timer-handle" class="absolute left-0 top-1/2 transform -translate-x-3 -translate-y-1/2 bg-primary text-white w-6 h-12 rounded-l-lg flex items-center justify-center cursor-pointer">
-            <i class="fa fa-chevron-left"></i>
-        </div>
-    </div>
 
     <div class="container mx-auto px-4 py-8">
         <nav class="mb-8 bg-white rounded-xl p-4 card-shadow">
@@ -898,7 +848,8 @@
         let pdfDoc = null;
         let currentPdfPage = 1;
         let currentTxtBookId = null; // 当前阅读的TXT书籍ID
-        
+        let baseRemainingTime = 7 * 60 * 60; // 基础剩余时间（不包含当前计时变动）
+
         // 修正 PDF 封面：使用更稳定的 Jsdelivr SVG
         const DEFAULT_PDF_COVER = '/uploads/images/file-earmark-pdf.svg'; // 假定您将此SVG放在后端静态目录
         const DEFAULT_TXT_COVER = '/uploads/images/file-earmark-text.svg';
@@ -927,163 +878,179 @@
             document.querySelector('.nav-btn.active').classList.remove('hover:bg-gray-100');
         }
         
+
+
         // ----------------------------------------------------
-        // 计时器逻辑 (Live Update 修正)
+        // 初始化计时器
         // ----------------------------------------------------
         function initTimer() {
-            const timerWidget = document.getElementById('timer-widget');
-            const timerHandle = document.getElementById('timer-handle');
-            const minimizeTimer = document.getElementById('minimize-timer');
-
-            document.getElementById('manual-date').valueAsDate = new Date();
-            
-            // 悬浮窗逻辑
-            timerHandle.addEventListener('click', function() {
-                timerWidget.classList.toggle('timer-hidden');
-                timerWidget.classList.toggle('timer-visible');
-                
-                const icon = this.querySelector('i');
-                if (timerWidget.classList.contains('timer-visible')) {
-                    icon.classList.remove('fa-chevron-left');
-                    icon.classList.add('fa-chevron-right');
-                } else {
-                    icon.classList.remove('fa-chevron-right');
-                    icon.classList.add('fa-chevron-left');
-                }
-            });
-            
-            minimizeTimer.addEventListener('click', function() {
-                timerWidget.classList.add('timer-hidden');
-                timerWidget.classList.remove('timer-visible');
-                const icon = timerHandle.querySelector('i');
-                icon.classList.remove('fa-chevron-right');
-                icon.classList.add('fa-chevron-left');
-            });
-            
-            // 计时器控制
-            const workHoursInput = document.getElementById('work-hours');
-            const pageWorkHoursInput = document.getElementById('timer-page-hours');
-
-            // 监听工作目标变化
-            const handleGoalChange = function() {
-                const hours = parseFloat(this.value) || 0;
-                workGoalTime = Math.round(hours * 60 * 60);
-                
-                // 同步值
-                workHoursInput.value = hours;
-                pageWorkHoursInput.value = hours;
-
-                updateRemainingTime();
-                updateEndTime();
+            // 检查DOM元素是否存在
+            const elements = {
+                startBtn: document.getElementById('timer-page-start'),
+                pauseBtn: document.getElementById('timer-page-pause'),
+                resetBtn: document.getElementById('timer-page-reset'),
+                hoursInput: document.getElementById('timer-page-hours'),
+                workHoursInput: document.getElementById('work-hours'),
+                addRecordBtn: document.getElementById('add-manual-record'),
+                dateInput: document.getElementById('manual-date'),
+                manualHoursInput: document.getElementById('manual-hours')
             };
 
-            workHoursInput.addEventListener('change', handleGoalChange);
-            pageWorkHoursInput.addEventListener('change', handleGoalChange);
-            
-            document.getElementById('start-timer').addEventListener('click', startTimer);
-            document.getElementById('pause-timer').addEventListener('click', pauseTimer);
-            document.getElementById('reset-timer').addEventListener('click', resetTimer);
-            document.getElementById('timer-page-start').addEventListener('click', startTimer);
-            document.getElementById('timer-page-pause').addEventListener('click', pauseTimer);
-            document.getElementById('timer-page-reset').addEventListener('click', resetTimer);
-            
-            document.getElementById('add-manual-record').addEventListener('click', addManualRecord);
+            // 绑定事件监听器（仅当元素存在时）
+            if (elements.startBtn) elements.startBtn.addEventListener('click', startTimer);
+            if (elements.pauseBtn) elements.pauseBtn.addEventListener('click', pauseTimer);
+            if (elements.resetBtn) elements.resetBtn.addEventListener('click', resetTimer);
+            if (elements.hoursInput) elements.hoursInput.addEventListener('change', handleGoalChange);
+            if (elements.workHoursInput) elements.workHoursInput.addEventListener('change', handleGoalChange);
+            if (elements.addRecordBtn) elements.addRecordBtn.addEventListener('click', addManualRecord);
 
-            // 初始更新
+            // 初始化日期为今天
+            if (elements.dateInput) {
+                const today = new Date().toISOString().split('T')[0];
+                elements.dateInput.value = today;
+            }
+
+            // 初始化手动输入框默认值
+            if (elements.manualHoursInput) {
+                elements.manualHoursInput.value = '1';
+            }
+
+            // 加载本地存储的记录
+            loadFromLocalStorage();
+            
+            // 初始化显示
             updateRemainingTime();
             updateEndTime();
+            renderWorkRecords();
+            renderMonthlyChart();
         }
 
-        // 在全局变量区域新增基础剩余时间变量
-        let baseRemainingTime = 7 * 60 * 60; // 基础剩余时间（不包含当前计时的变动）
+        // ----------------------------------------------------
+        // 工作目标变更处理
+        // ----------------------------------------------------
+        function handleGoalChange() {
+            const hoursInput = document.getElementById('timer-page-hours');
+            const workHoursInput = document.getElementById('work-hours');
+            
+            // 确保两个输入框同步
+            if (this === hoursInput && workHoursInput) {
+                workHoursInput.value = this.value;
+            } else if (this === workHoursInput && hoursInput) {
+                hoursInput.value = this.value;
+            }
+            
+            updateRemainingTime();
+        }
 
+        // ----------------------------------------------------
+        // 剩余时间计算与更新
+        // ----------------------------------------------------
         function updateRemainingTime() {
-            const totalGoalHours = parseFloat(document.getElementById('work-hours').value) || 0;
-            workGoalTime = Math.round(totalGoalHours * 60 * 60); // 目标总时长（秒）
+            const workHoursInput = document.getElementById('work-hours') || 
+                                document.getElementById('timer-page-hours');
+                                
+            if (!workHoursInput) return;
+            
+            const totalGoalHours = parseFloat(workHoursInput.value) || 0;
+            workGoalTime = Math.round(totalGoalHours * 60 * 60); // 转换为秒
 
             // 计算已完成的工作记录总时长（秒）
             const completedHours = workRecords.reduce((total, record) => total + record.hours, 0);
             const completedTimeSec = Math.round(completedHours * 60 * 60);
             
-            // 基础剩余时间 = 目标时间 - 已完成记录时间（仅计算一次）
+            // 基础剩余时间 = 目标时间 - 已完成记录时间
             baseRemainingTime = Math.max(0, workGoalTime - completedTimeSec);
             
-            // 当前剩余时间 = 基础剩余时间（如果未计时）或正在进行的剩余时间
+            // 处理计时器运行状态
             const wasRunning = isTimerRunning;
             if (wasRunning) {
                 clearInterval(timerInterval);
                 isTimerRunning = false;
             }
             
-            // 只有在未计时状态下，才同步剩余时间与基础剩余时间
-            if (!wasRunning) {
-                remainingTime = baseRemainingTime;
-            }
-
+            // 同步剩余时间
+            remainingTime = baseRemainingTime;
+            
+            // 重新启动计时器（如果之前在运行）
             if (wasRunning) {
-                startTimer(); // 重新启动计时器
+                startTimer();
             } else {
-                updateTimerDisplay(); // 更新显示
+                updateTimerDisplay();
             }
 
             updateEndTime();
             saveToLocalStorage();
             renderMonthlyChart();
+            updateTodayStats();
         }
 
+        // ----------------------------------------------------
+        // 计时器控制函数
+        // ----------------------------------------------------
         function startTimer() {
             if (isTimerRunning) return;
             
             isTimerRunning = true;
-            document.getElementById('start-timer').classList.add('hidden');
-            document.getElementById('pause-timer').classList.remove('hidden');
-            document.getElementById('timer-page-start').classList.add('hidden');
-            document.getElementById('timer-page-pause').classList.remove('hidden');
             
-            // 在计时器的setInterval逻辑中（约1051行）
+            // 更新按钮状态
+            const startBtn = document.getElementById('timer-page-start');
+            const pauseBtn = document.getElementById('timer-page-pause');
+            if (startBtn) startBtn.classList.add('hidden');
+            if (pauseBtn) pauseBtn.classList.remove('hidden');
+            
+            // 启动计时器
             timerInterval = setInterval(function() {
                 remainingTime--;
                 updateTimerDisplay();
                 saveToLocalStorage();
 
+                // 计时结束处理
                 if (remainingTime <= 0) {
                     clearInterval(timerInterval);
                     isTimerRunning = false;
-                    document.getElementById('start-timer').classList.remove('hidden');
-                    document.getElementById('pause-timer').classList.add('hidden');
-                    document.getElementById('timer-page-start').classList.remove('hidden');
-                    document.getElementById('timer-page-pause').classList.add('hidden');
                     
-                    // 计算本次实际计时时长（基础剩余时间 - 结束时剩余时间，避免负数）
+                    // 恢复按钮状态
+                    if (startBtn) startBtn.classList.remove('hidden');
+                    if (pauseBtn) pauseBtn.classList.add('hidden');
+                    
+                    // 计算实际工作时长并添加记录
                     const actualHours = Math.max(0, (baseRemainingTime - remainingTime) / 3600);
-                    addWorkRecord(actualHours, false); // 添加本次计时记录
+                    addWorkRecord(actualHours, false);
                     
-                    // 重新计算剩余时间（基于新添加的记录）
+                    // 更新剩余时间
                     updateRemainingTime(); 
                     alert('工作时间已结束！');
                 }
             }, 1000);
         }
-        
+
         function pauseTimer() {
             if (!isTimerRunning) return;
             
             clearInterval(timerInterval);
             isTimerRunning = false;
-            document.getElementById('start-timer').classList.remove('hidden');
-            document.getElementById('pause-timer').classList.add('hidden');
-            document.getElementById('timer-page-start').classList.remove('hidden');
-            document.getElementById('timer-page-pause').classList.add('hidden');
+            
+            // 更新按钮状态
+            const startBtn = document.getElementById('timer-page-start');
+            const pauseBtn = document.getElementById('timer-page-pause');
+            if (startBtn) startBtn.classList.remove('hidden');
+            if (pauseBtn) pauseBtn.classList.add('hidden');
             
             saveToLocalStorage();
         }
-        
+
         function resetTimer() {
             pauseTimer();
-            const hours = parseFloat(document.getElementById('work-hours').value) || 0;
+            
+            const workHoursInput = document.getElementById('work-hours') || 
+                                document.getElementById('timer-page-hours');
+                                
+            if (!workHoursInput) return;
+                                
+            const hours = parseFloat(workHoursInput.value) || 0;
             workGoalTime = Math.round(hours * 60 * 60);
             
-            // 重置时直接重新计算基础剩余时间，不依赖之前的剩余时间
+            // 重新计算基础剩余时间
             const completedHours = workRecords.reduce((total, record) => total + record.hours, 0);
             const completedTimeSec = Math.round(completedHours * 60 * 60);
             baseRemainingTime = Math.max(0, workGoalTime - completedTimeSec);
@@ -1093,7 +1060,10 @@
             updateEndTime();
             saveToLocalStorage();
         }
-        
+
+        // ----------------------------------------------------
+        // 显示更新函数
+        // ----------------------------------------------------
         function updateTimerDisplay() {
             const hours = Math.floor(remainingTime / 3600);
             const minutes = Math.floor((remainingTime % 3600) / 60);
@@ -1101,21 +1071,43 @@
             
             const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             
-            document.getElementById('countdown').textContent = timeString;
-            document.getElementById('timer-page-display').textContent = timeString;
+            // 更新所有计时器显示元素
+            const countdownEl = document.getElementById('countdown');
+            const timerDisplayEl = document.getElementById('timer-page-display');
+            if (countdownEl) countdownEl.textContent = timeString;
+            if (timerDisplayEl) timerDisplayEl.textContent = timeString;
         }
-        
+
         function updateEndTime() {
             const now = new Date();
             const endTime = new Date(now.getTime() + remainingTime * 1000);
             
             const hours = endTime.getHours().toString().padStart(2, '0');
             const minutes = endTime.getMinutes().toString().padStart(2, '0');
+            const timeString = `${hours}:${minutes}`;
             
-            document.getElementById('end-time').textContent = `${hours}:${minutes}`;
-            document.getElementById('timer-page-end-time').textContent = `${hours}:${minutes}`;
+            // 更新所有结束时间显示元素
+            const endTimeEl = document.getElementById('end-time');
+            const timerPageEndTimeEl = document.getElementById('timer-page-end-time');
+            if (endTimeEl) endTimeEl.textContent = timeString;
+            if (timerPageEndTimeEl) timerPageEndTimeEl.textContent = timeString;
         }
-        
+
+        function updateTodayStats() {
+            const today = new Date().toISOString().split('T')[0];
+            const todayHours = workRecords
+                .filter(record => record.date === today)
+                .reduce((total, record) => total + record.hours, 0);
+            
+            const statsEl = document.getElementById('today-stats');
+            if (statsEl) {
+                statsEl.textContent = `今日已工作: ${todayHours.toFixed(1)} 小时`;
+            }
+        }
+
+        // ----------------------------------------------------
+        // 工作记录管理
+        // ----------------------------------------------------
         function addWorkRecord(hours, manual = false) {
             const now = new Date();
             const dateString = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
@@ -1124,12 +1116,12 @@
             const record = {
                 date: dateString,
                 time: timeString,
-                hours: hours,
+                hours: parseFloat(hours.toFixed(1)), // 保留一位小数
                 manual: manual
             };
 
             // 先更新本地记录并刷新UI
-            workRecords.unshift({...record, id: Date.now()}); // 临时ID，后续会被后端ID替换
+            workRecords.unshift({...record, id: Date.now()}); // 临时ID
             renderWorkRecords();
             updateTodayStats();
             updateRemainingTime();
@@ -1140,11 +1132,14 @@
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(record)
-            }).then(res => res.json())
+            })
+            .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    // 用后端返回的带ID记录替换临时记录
-                    const index = workRecords.findIndex(r => r.date === data.record.date && r.time === data.record.time);
+                if (data.success && data.record?.id) {
+                    // 用后端返回的ID替换临时ID
+                    const index = workRecords.findIndex(r => 
+                        r.date === data.record.date && r.time === data.record.time
+                    );
                     if (index !== -1) {
                         workRecords[index] = data.record;
                         renderWorkRecords();
@@ -1161,10 +1156,12 @@
             const hoursInput = document.getElementById('manual-hours');
             const dateInput = document.getElementById('manual-date');
             
+            if (!hoursInput || !dateInput) return;
+            
             const hours = parseFloat(hoursInput.value);
             const date = dateInput.value;
             
-            if (!hours || hours <= 0 || !date) {
+            if (isNaN(hours) || hours <= 0 || !date) {
                 alert('请输入有效的工作时长和日期。');
                 return;
             }
@@ -1175,7 +1172,7 @@
             const record = {
                 date: date,
                 time: timeString,
-                hours: hours,
+                hours: parseFloat(hours.toFixed(1)),
                 manual: true 
             };
 
@@ -1191,17 +1188,20 @@
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(record)
-            }).then(res => res.json())
+            })
+            .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    const index = workRecords.findIndex(r => r.date === data.record.date && r.time === data.record.time);
+                if (data.success && data.record?.id) {
+                    const index = workRecords.findIndex(r => 
+                        r.date === data.record.date && r.time === data.record.time
+                    );
                     if (index !== -1) {
                         workRecords[index] = data.record;
                         renderWorkRecords();
                         saveToLocalStorage();
                     }
                     alert(`已成功添加 ${hours} 小时的工作记录 (${date})`);
-                    hoursInput.value = '1';
+                    hoursInput.value = '1'; // 重置输入框
                 }
             })
             .catch(error => {
@@ -1209,24 +1209,70 @@
                 alert('添加失败，请稍后重试');
             });
         }
-        
+
+        function deleteWorkRecord(id) {
+            // 先从本地移除并更新UI
+            const recordIndex = workRecords.findIndex(record => record.id === id);
+            if (recordIndex === -1) return;
+            
+            const deletedRecord = workRecords.splice(recordIndex, 1)[0];
+            renderWorkRecords();
+            updateTodayStats();
+            updateRemainingTime();
+            saveToLocalStorage();
+            
+            // 同步到后端
+            fetch(`/api/work-records/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    // 恢复删除的记录
+                    workRecords.splice(recordIndex, 0, deletedRecord);
+                    renderWorkRecords();
+                    updateTodayStats();
+                    updateRemainingTime();
+                    saveToLocalStorage();
+                    throw new Error('删除失败');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data.success) {
+                    console.error('后端删除失败:', data.error);
+                    alert('删除失败，请稍后重试');
+                }
+            })
+            .catch(error => {
+                console.error('删除工作记录失败:', error);
+                alert('网络错误，删除失败');
+            });
+        }
+
         function renderWorkRecords() {
             const container = document.getElementById('work-records');
+            if (!container) return;
             
             if (workRecords.length === 0) {
                 container.innerHTML = '<div class="text-gray-500 text-center py-4">暂无工作记录</div>';
                 return;
             }
             
-            workRecords.sort((a, b) => new Date(b.date) - new Date(a.date));
+            // 按日期排序（最新的在前）
+            const sortedRecords = [...workRecords].sort((a, b) => 
+                new Date(b.date) - new Date(a.date) || 
+                b.time.localeCompare(a.time)
+            );
 
             container.innerHTML = '';
             
-            workRecords.forEach(record => {
-                const manualTag = record.manual ? '<span class="text-xs bg-blue-100 text-blue-800 rounded px-2 py-0.5 ml-2">手动</span>' : '';
+            sortedRecords.forEach(record => {
+                const manualTag = record.manual 
+                    ? '<span class="text-xs bg-blue-100 text-blue-800 rounded px-2 py-0.5 ml-2">手动</span>' 
+                    : '';
 
                 const recordElement = document.createElement('div');
-                recordElement.className = 'border rounded-lg p-3 flex justify-between items-center';
+                recordElement.className = 'border rounded-lg p-3 flex justify-between items-center mb-2';
                 recordElement.innerHTML = `
                     <div>
                         <p class="font-medium">${record.date} ${record.time} ${manualTag}</p>
@@ -1239,22 +1285,15 @@
                 container.appendChild(recordElement);
             });
         }
-        
-        function deleteWorkRecord(id) {
-            workRecords = workRecords.filter(record => record.id !== id);
-            renderWorkRecords();
-            updateTodayStats();
-            updateRemainingTime();
-            
-            saveToLocalStorage();
-        }
 
-        // 月视图图表逻辑
+        // ----------------------------------------------------
+        // 月度图表展示
+        // ----------------------------------------------------
         function getMonthlyData() {
             const data = {};
             const now = new Date();
             
-            // 筛选最近 6 个月的数据
+            // 准备最近6个月的数据结构
             for (let i = 0; i < 6; i++) {
                 const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
                 const monthKey = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -1262,19 +1301,20 @@
                 data[monthKey] = { hours: 0, label: label };
             }
 
+            // 累加每月工作时长
             workRecords.forEach(record => {
-                const monthKey = record.date.substring(0, 7); // YYYY-MM
+                const monthKey = record.date.substring(0, 7); // 提取 YYYY-MM
                 if (data.hasOwnProperty(monthKey)) {
                     data[monthKey].hours += record.hours;
                 }
             });
 
-            // 提取数据点和标签，并确保顺序正确（从旧到新）
-            const keys = Object.keys(data).sort();
-            const labels = keys.map(key => data[key].label);
-            const hours = keys.map(key => Math.round(data[key].hours));
-            
-            return { labels, hours };
+            // 整理数据格式
+            const keys = Object.keys(data).sort(); // 按月份排序
+            return {
+                labels: keys.map(key => data[key].label),
+                hours: keys.map(key => parseFloat(data[key].hours.toFixed(1)))
+            };
         }
 
         function renderMonthlyChart() {
@@ -1288,18 +1328,20 @@
             // 清除画布
             ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
 
-            const padding = 20;
+            // 图表配置
+            const padding = 30;
             const chartHeight = chartCanvas.height - 2 * padding;
             const chartWidth = chartCanvas.width - 2 * padding;
-            const maxHours = Math.max(...hours, 1); // 确保最大值不为 0
+            const maxHours = Math.max(...hours, 1); // 确保至少为1，避免除以0
             const numBars = hours.length;
-            const totalSpacing = chartWidth / numBars * 0.2; // 总间距占宽度的 20%
-            const barWidth = (chartWidth - totalSpacing * (numBars - 1)) / numBars;
-            const spacing = (chartWidth - numBars * barWidth) / (numBars - 1);
             
-            const effectiveSpacing = numBars > 1 ? spacing : chartWidth * 0.5;
+            // 计算柱形宽度和间距
+            const totalBarSpace = chartWidth * 0.7; // 柱形总宽度占70%
+            const totalGapSpace = chartWidth - totalBarSpace; // 间隙总宽度
+            const barWidth = totalBarSpace / numBars;
+            const gap = numBars > 1 ? totalGapSpace / (numBars - 1) : 0;
 
-            // 绘制轴线
+            // 绘制坐标轴
             ctx.strokeStyle = '#ccc';
             ctx.beginPath();
             ctx.moveTo(padding, padding);
@@ -1307,32 +1349,81 @@
             ctx.lineTo(chartCanvas.width - padding, chartCanvas.height - padding);
             ctx.stroke();
 
-            // 绘制柱状图
-            ctx.fillStyle = '#3B82F6'; // Primary color
+            // 绘制柱形
+            ctx.fillStyle = '#3B82F6'; // 蓝色
             hours.forEach((h, index) => {
                 const barHeight = (h / maxHours) * chartHeight;
-                let x;
-                if (numBars > 1) {
-                    x = padding + index * (barWidth + spacing);
-                } else {
-                    x = padding + chartWidth * 0.5 - barWidth / 2; // 单个柱子居中
-                }
-
+                const x = padding + index * (barWidth + gap);
                 const y = chartCanvas.height - padding - barHeight;
 
+                // 绘制柱形
                 ctx.fillRect(x, y, barWidth, barHeight);
-
-                // 绘制标签（月份）
+                
+                // 添加阴影效果
+                ctx.fillStyle = 'rgba(59, 130, 246, 0.3)';
+                ctx.fillRect(x, chartCanvas.height - padding, barWidth, 5);
+                
+                // 绘制月份标签
                 ctx.fillStyle = '#666';
+                ctx.font = '12px Arial';
                 ctx.textAlign = 'center';
                 ctx.fillText(labels[index], x + barWidth / 2, chartCanvas.height - padding + 15);
                 
-                // 绘制数值
+                // 绘制小时数
                 if (h > 0) {
-                    ctx.textAlign = 'center';
-                    ctx.fillText(h + 'h', x + barWidth / 2, y - 5);
+                    ctx.fillStyle = '#333';
+                    ctx.fillText(`${h}h`, x + barWidth / 2, y - 8);
                 }
             });
+        }
+
+        // ----------------------------------------------------
+        // 本地存储管理
+        // ----------------------------------------------------
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('workRecords', JSON.stringify(workRecords));
+                localStorage.setItem('timerState', JSON.stringify({
+                    isRunning: isTimerRunning,
+                    remainingTime: remainingTime,
+                    baseRemainingTime: baseRemainingTime,
+                    workGoalTime: workGoalTime
+                }));
+            } catch (e) {
+                console.error('保存到本地存储失败:', e);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const savedRecords = localStorage.getItem('workRecords');
+                if (savedRecords) {
+                    workRecords = JSON.parse(savedRecords);
+                }
+                
+                const timerState = localStorage.getItem('timerState');
+                if (timerState) {
+                    const state = JSON.parse(timerState);
+                    isTimerRunning = state.isRunning;
+                    remainingTime = state.remainingTime;
+                    baseRemainingTime = state.baseRemainingTime;
+                    workGoalTime = state.workGoalTime;
+                    
+                    // 恢复工作目标输入框值
+                    const hours = workGoalTime / 3600;
+                    const hoursInput = document.getElementById('timer-page-hours');
+                    const workHoursInput = document.getElementById('work-hours');
+                    if (hoursInput) hoursInput.value = hours;
+                    if (workHoursInput) workHoursInput.value = hours;
+                    
+                    // 如果计时器之前在运行，重新启动
+                    if (isTimerRunning) {
+                        startTimer();
+                    }
+                }
+            } catch (e) {
+                console.error('从本地存储加载失败:', e);
+            }
         }
 
         // ----------------------------------------------------
@@ -2130,17 +2221,17 @@
             function getTileClass(value) {
                 const classes = {
                     0: 'bg-gray-100 border-gray-200',
-                    2: 'bg-amber-50 text-amber-900 font-bold text-2xl',
-                    4: 'bg-amber-100 text-amber-900 font-bold text-2xl',
-                    8: 'bg-orange-100 text-orange-900 font-bold text-2xl',
-                    16: 'bg-orange-200 text-orange-900 font-bold text-2xl',
-                    32: 'bg-orange-300 text-white font-bold text-2xl',
-                    64: 'bg-orange-400 text-white font-bold text-2xl',
-                    128: 'bg-yellow-200 text-yellow-900 font-bold text-3xl',
-                    256: 'bg-yellow-300 text-yellow-900 font-bold text-3xl',
-                    512: 'bg-yellow-400 text-white font-bold text-3xl',
-                    1024: 'bg-yellow-500 text-white font-bold text-4xl',
-                    2048: 'bg-yellow-600 text-white font-bold text-4xl'
+                    2: 'bg-amber-50 text-amber-900 font-bold text-3xl',
+                    4: 'bg-amber-100 text-amber-900 font-bold text-3xl',
+                    8: 'bg-orange-100 text-orange-900 font-bold text-3xl',
+                    16: 'bg-orange-200 text-orange-900 font-bold text-3xl',
+                    32: 'bg-orange-300 text-white font-bold text-3xl',
+                    64: 'bg-orange-400 text-white font-bold text-3xl',
+                    128: 'bg-yellow-200 text-yellow-900 font-bold text-4xl',
+                    256: 'bg-yellow-300 text-yellow-900 font-bold text-4xl',
+                    512: 'bg-yellow-400 text-white font-bold text-4xl',
+                    1024: 'bg-yellow-500 text-white font-bold text-5xl',
+                    2048: 'bg-yellow-600 text-white font-bold text-5xl'
                 };
                 return classes[value] || 'bg-red-500 text-white text-2xl';
             }
@@ -3024,45 +3115,6 @@
             localStorage.setItem('workspaceData', JSON.stringify(data));
         }
 
-        // 从本地存储加载（优先使用后端数据，本地作为 fallback）
-        function loadFromLocalStorage() {
-            const data = localStorage.getItem('workspaceData');
-            if (data) {
-                try {
-                    const parsedData = JSON.parse(data);
-                    
-                    workGoalTime = parsedData.workGoalTime || 7 * 60 * 60;
-                    workRecords = parsedData.workRecords || [];
-                    isTimerRunning = parsedData.isTimerRunning || false;
-                    
-                    // 重新计算基础剩余时间（基于加载的记录）
-                    const completedHours = workRecords.reduce((total, record) => total + record.hours, 0);
-                    const completedTimeSec = Math.round(completedHours * 60 * 60);
-                    baseRemainingTime = Math.max(0, workGoalTime - completedTimeSec);
-                    
-                    // 加载剩余时间（如果正在计时则用存储的值，否则用基础剩余时间）
-                    remainingTime = isTimerRunning ? (parsedData.remainingTime || baseRemainingTime) : baseRemainingTime;
-
-                    const hours = workGoalTime / 3600;
-                    document.getElementById('work-hours').value = hours;
-                    document.getElementById('timer-page-hours').value = hours;
-                    
-                    updateTimerDisplay();
-                    updateEndTime();
-                    renderWorkRecords();
-                    renderMonthlyChart();
-                    updateTodayStats();
-                    
-                    if (isTimerRunning) {
-                        startTimer();
-                    }
-                } catch (error) {
-                    console.error('加载本地存储数据失败:', error);
-                }
-            } else {
-                updateRemainingTime();
-            }
-        }
         
         // 在 window.addEventListener('load', ...) 中添加
         function initWorkRecords() {
