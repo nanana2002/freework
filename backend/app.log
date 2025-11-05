@@ -10,35 +10,15 @@
  * Debugger PIN: 127-026-565
 /root/freework/backend/app.py:458: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
   record = WorkRecord.query.get(record_id)
-127.0.0.1 - - [04/Nov/2025 23:47:19] "GET / HTTP/1.1" 200 -
-127.0.0.1 - - [04/Nov/2025 23:47:19] "DELETE /api/work-records/2 HTTP/1.1" 200 -
-127.0.0.1 - - [04/Nov/2025 23:47:19] "POST /api/work-records HTTP/1.1" 200 -
-127.0.0.1 - - [04/Nov/2025 23:47:19] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
-127.0.0.1 - - [04/Nov/2025 23:47:19] "[36mGET /static/games/minesweeper.html HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Nov/2025 23:47:21] "GET /api/get-pdfs HTTP/1.1" 200 -
-127.0.0.1 - - [04/Nov/2025 23:47:21] "GET /api/notes HTTP/1.1" 200 -
-127.0.0.1 - - [04/Nov/2025 23:47:21] "GET /api/work-records HTTP/1.1" 200 -
-127.0.0.1 - - [04/Nov/2025 23:47:21] "GET /api/ai-config HTTP/1.1" 200 -
-127.0.0.1 - - [04/Nov/2025 23:47:21] "GET /api/bookmarks HTTP/1.1" 200 -
-127.0.0.1 - - [04/Nov/2025 23:47:21] "GET /api/conversations HTTP/1.1" 200 -
-127.0.0.1 - - [04/Nov/2025 23:47:23] "[36mGET /uploads/pdfs/山河枕_1762269542.txt HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Nov/2025 23:47:31] "[36mGET /uploads/pdfs/山河枕_1762269542.txt HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Nov/2025 23:47:44] "[36mGET /uploads/pdfs/山河枕_1762269542.txt HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Nov/2025 23:47:57] "[36mGET /uploads/pdfs/山河枕_1762269542.txt HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Nov/2025 23:48:40] "[36mGET /uploads/pdfs/山河枕_1762269542.txt HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Nov/2025 23:48:49] "DELETE /api/delete-pdf/11 HTTP/1.1" 200 -
-127.0.0.1 - - [04/Nov/2025 23:48:59] "POST /api/upload-pdf HTTP/1.1" 200 -
-127.0.0.1 - - [04/Nov/2025 23:49:03] "GET /uploads/pdfs/山河枕_1762271339.txt HTTP/1.1" 200 -
-127.0.0.1 - - [04/Nov/2025 23:49:11] "[36mGET /uploads/pdfs/表妹万福_1762177920.txt HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Nov/2025 23:49:19] "[36mGET /uploads/pdfs/表妹万福_1762177920.txt HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Nov/2025 23:50:03] "POST /api/upload-pdf HTTP/1.1" 200 -
-127.0.0.1 - - [04/Nov/2025 23:50:05] "GET /uploads/pdfs/女将星_1762271403.txt HTTP/1.1" 200 -
-127.0.0.1 - - [04/Nov/2025 23:50:21] "[36mGET /uploads/pdfs/女将星_1762271403.txt HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Nov/2025 23:50:48] "[36mGET /uploads/pdfs/女将星_1762271403.txt HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Nov/2025 23:51:13] "[36mGET /uploads/pdfs/女将星_1762271403.txt HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Nov/2025 23:51:37] "[36mGET /uploads/pdfs/女将星_1762271403.txt HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Nov/2025 23:52:00] "[36mGET /uploads/pdfs/女将星_1762271403.txt HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Nov/2025 23:52:15] "[36mGET /uploads/pdfs/女将星_1762271403.txt HTTP/1.1[0m" 304 -
-127.0.0.1 - - [04/Nov/2025 23:52:40] "DELETE /api/work-records/1 HTTP/1.1" 200 -
-127.0.0.1 - - [04/Nov/2025 23:52:40] "POST /api/work-records HTTP/1.1" 200 -
-127.0.0.1 - - [04/Nov/2025 23:52:41] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+127.0.0.1 - - [05/Nov/2025 11:01:57] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [05/Nov/2025 11:01:57] "DELETE /api/work-records/1 HTTP/1.1" 200 -
+127.0.0.1 - - [05/Nov/2025 11:01:57] "POST /api/work-records HTTP/1.1" 200 -
+127.0.0.1 - - [05/Nov/2025 11:01:57] "[33mGET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1[0m" 404 -
+127.0.0.1 - - [05/Nov/2025 11:01:57] "[36mGET /static/games/minesweeper.html HTTP/1.1[0m" 304 -
+127.0.0.1 - - [05/Nov/2025 11:01:58] "GET /api/get-pdfs HTTP/1.1" 200 -
+127.0.0.1 - - [05/Nov/2025 11:01:58] "GET /api/notes HTTP/1.1" 200 -
+127.0.0.1 - - [05/Nov/2025 11:01:58] "GET /api/ai-config HTTP/1.1" 200 -
+127.0.0.1 - - [05/Nov/2025 11:01:58] "GET /api/bookmarks HTTP/1.1" 200 -
+127.0.0.1 - - [05/Nov/2025 11:01:58] "GET /api/work-records HTTP/1.1" 200 -
+127.0.0.1 - - [05/Nov/2025 11:01:58] "GET /api/conversations HTTP/1.1" 200 -
+127.0.0.1 - - [05/Nov/2025 11:01:58] "[36mGET /static/icons/favicon.svg HTTP/1.1[0m" 304 -
