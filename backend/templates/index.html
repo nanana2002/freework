@@ -315,10 +315,6 @@
                         <h4 class="text-gray-500 mb-2">已工作时间</h4>
                         <p id="today-worked" class="text-2xl font-bold">0小时0分钟</p>
                     </div>
-                    <div class="border border-gray-200 rounded-lg p-4">
-                        <h4 class="text-gray-500 mb-2">已创建备忘录</h4>
-                        <p id="today-notes" class="text-2xl font-bold">0篇</p>
-                    </div>
                 </div>
             </div>
         </div>
@@ -485,6 +481,11 @@
                         <option value="sepia-mode">羊皮纸</option>
                         <option value="dark-mode">夜间</option>
                     </select>
+                    <span class="border-l h-6 border-white/50 ml-3"></span>
+                    <label for="font-decrease" class="text ml-1">字体大小:</label>
+                    <button id="font-decrease" class="bg-white/20 hover:bg-white/40 text-light rounded-full w-6 h-6 flex items-center justify-center text-lg">-</button>
+                    <span id="font-current-size" class="text-light text-sm w-12 text-center">1.1rem</span>
+                    <button id="font-increase" class="bg-white/20 hover:bg-white/40 text-light rounded-full w-6 h-6 flex items-center justify-center text-lg">+</button>
                     <button id="close-txt-reader" class="text-light hover:text-red-400 text-2xl">
                         <i class="fa fa-times-circle"></i>
                     </button>
@@ -503,7 +504,7 @@
                 </div>
             </header>
             <div id="txt-reader" class="flex-grow overflow-hidden bg-light-mode" tabindex="0">
-                <div id="txt-content" class="txt-page mx-auto" style="max-width: 800px;">
+                <div id="txt-content" class="txt-page mx-auto" style="max-width: 1100px;">
                     <!-- 文本内容将在这里加载 -->
                 </div>
             </div>
@@ -827,6 +828,7 @@
         let pdfDoc = null;
         let currentPdfPage = 1;
         let currentTxtBookId = null; // 当前阅读的TXT书籍ID
+        let currentTxtFontSize = 1.1; // ✅ 2. 新增：TXT阅读器字体大小
         let baseRemainingTime = 7 * 60 * 60; // 基础剩余时间（不包含当前计时变动）
 
         // 修正 PDF 封面：使用更稳定的 Jsdelivr SVG
@@ -1896,12 +1898,66 @@
                 });
         }
         
+        /**
+         * ✅ 3A. 新增：更新TXT阅读器的字体大小
+         */
+        function updateFontSize(newSize) {
+            // 限制字体大小范围
+            const minSize = 0.5;
+            const maxSize = 2.5;
+            
+            // 使用 toFixed(1) 来避免浮点数精度问题
+            newSize = parseFloat(newSize.toFixed(1));
+            
+            if (newSize < minSize) newSize = minSize;
+            if (newSize > maxSize) newSize = maxSize;
+            
+            currentTxtFontSize = newSize;
+            
+            // 1. 应用到DOM
+            const txtContent = document.getElementById('txt-content');
+            if (txtContent) {
+                txtContent.style.fontSize = newSize + 'rem';
+            }
+            
+            // 2. 更新显示
+            const sizeDisplay = document.getElementById('font-current-size');
+            if (sizeDisplay) {
+                sizeDisplay.textContent = newSize.toFixed(1) + 'rem';
+            }
+            
+            // 3. 保存到本地存储
+            localStorage.setItem('txtFontSize', newSize.toString());
+            
+            // 4. (重要) 更新分页信息，因为内容高度变化了
+            //    我们稍作延迟以等待DOM渲染
+            setTimeout(updateTxtPageInfo, 50); 
+        }
+
         // 初始化 TXT 阅读器控制 (绑定事件)
         function initTxtReader() {
             const txtReader = document.getElementById('txt-reader');
             const bgModeSelect = document.getElementById('bg-mode');
             const prevBtn = document.getElementById('txt-prev-page');
             const nextBtn = document.getElementById('txt-next-page');
+
+            // ✅ 3B. 新增：加载字体大小
+            const savedSize = parseFloat(localStorage.getItem('txtFontSize'));
+            if (savedSize && !isNaN(savedSize)) {
+                // 使用 updateFontSize 来应用和显示
+                updateFontSize(savedSize);
+            } else {
+                // 确保默认值也被正确应用和显示
+                updateFontSize(1.1); 
+            }
+
+            // ✅ 3B. 新增：绑定字体大小按钮事件
+            document.getElementById('font-decrease').addEventListener('click', () => {
+                updateFontSize(currentTxtFontSize - 0.1);
+            });
+            document.getElementById('font-increase').addEventListener('click', () => {
+                updateFontSize(currentTxtFontSize + 0.1);
+            });
 
             // 监听背景切换
             bgModeSelect.addEventListener('change', function() {
@@ -2732,6 +2788,52 @@
                 }
             });
             
+            // ----------------------------------------------------
+            // ✅ 新增：实现图片上传按钮功能
+            // ----------------------------------------------------
+            document.getElementById('insert-image').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('image', file); // 'image' 必须与您后端接收的字段名一致
+
+                // 1. 先在光标处插入一个临时的“上传中”文本
+                // (我们使用 insertAtCursor 函数，它已在 L2831 定义)
+                const originalText = `![Uploading ${file.name}...]()`;
+                insertAtCursor('note-content-md', originalText);
+                
+                // 2. 将图片 POST 到您的后端 API (您需要创建这个 API)
+                fetch('/api/notes/upload-image', { 
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const textarea = document.getElementById('note-content-md');
+                    if (data.success && data.url) {
+                        // 3. 上传成功，用服务器返回的真实 URL 替换
+                        const newMarkdown = `![${file.name}](${data.url})`;
+                        textarea.value = textarea.value.replace(originalText, newMarkdown);
+                        
+                        // 触发 input 事件以更新预览
+                        textarea.dispatchEvent(new Event('input'));
+                    } else {
+                        // 4. 上传失败
+                        throw new Error(data.error || '上传失败');
+                    }
+                })
+                .catch(error => {
+                    console.error('图片上传失败:', error);
+                    const textarea = document.getElementById('note-content-md');
+                    textarea.value = textarea.value.replace(originalText, `![上传失败: ${file.name}]()`);
+                })
+                .finally(() => {
+                    // 清空文件输入框，以便下次可以上传同名文件
+                    e.target.value = null; 
+                });
+            });
+
             renderNotes();
         }
         

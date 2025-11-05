@@ -562,6 +562,55 @@ def ai_config():
             return jsonify({'success': True, 'config': config.to_dict()})
         else:
             return jsonify({'success': True, 'config': None})
+            
+# 1. 定义好您的基础上传目录
+UPLOADS_BASE_DIR = os.path.join(app.root_path, 'uploads')
+
+@app.route('/api/notes/upload-image', methods=['POST'])
+def upload_image_route():
+    try:
+        if 'image' not in request.files:
+            return jsonify({"success": False, "error": "No image part"}), 400
+            
+        file = request.files['image']
+        
+        if file.filename == '':
+            return jsonify({"success": False, "error": "No selected file"}), 400
+        
+        filename = file.filename 
+        
+        # 2. 定义您想保存的具体子目录
+        # (这应该与您前端请求的路径 /uploads/notes/images/ 一致)
+        target_directory = os.path.join(UPLOADS_BASE_DIR, 'notes', 'images')
+        
+        # 3. ✅ 关键修复：在保存前，确保这个目录存在
+        os.makedirs(target_directory, exist_ok=True)
+        
+        # 4. 定义完整的文件保存路径
+        save_path = os.path.join(target_directory, filename)
+        
+        # 5. 保存文件
+        file.save(save_path)
+        
+        # 6. 构造给前端的 URL
+        file_url = f"/uploads/notes/images/{filename}" 
+        
+        # 7. 只有在真正保存成功后，才返回成功
+        return jsonify({"success": True, "url": file_url})
+
+    except Exception as e:
+        # 8. ✅ 关键修复：如果发生任何错误，必须返回失败的 JSON
+        print(f"Error saving image: {e}") # 在服务器上打印错误
+        return jsonify({"success": False, "error": f"Internal server error: {e}"}), 500
+    
+@app.route('/uploads/<path:subpath>')
+def serve_uploaded_file(subpath):
+    """
+    提供 /uploads/ 路径下的所有文件s。
+    'subpath' 会自动捕获 URL 中 'uploads/' 之后的所有内容，
+    例如 'notes/images/9ae4b168909be01f27d7ae41ec5be621.jpeg'
+    """
+    return send_from_directory(UPLOADS_BASE_DIR, subpath)
 
 if __name__ == '__main__':
     with app.app_context():
