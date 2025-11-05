@@ -16,10 +16,31 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#B0DB9C',
-                        accent: '#8B5CF6',
-                        orange: '#CAE8BD',
-                        light: '#F8FAFC'
+                        primary: '#B0DB9C',    // 主绿
+                        secondary: '#CAE8BD',  // 次绿
+                        accent: '#9EC6F3',     // 强调蓝
+
+                        container: '#EDF3FD',  // 容器蓝
+                        containerbutton: '#B6CFF6', // 容器按钮蓝
+
+                        button:  '#B6CDF7',        // 按钮蓝
+                        buttonhover:'#7FA7EC', // 按钮悬停蓝
+
+                        orange: '#F2BB91',      // 橙色
+                        buttonread: '#EC9A5B',  // 阅读按钮
+                        buttonreadhover: '#EA8E48', // 阅读按钮悬停
+                        book: '#EDF3FD',       // 书籍蓝
+
+                        dark: '#A0C878',       // 深绿
+                        
+                        light: '#ECFAE5',      // 浅绿
+                        warm: '#FFD6BA',       // 温暖橙
+                        neutral: '#FAF1E6',    // 中性米黄
+                        soft: '#DDF6D2',       // 柔和背景
+                        paper: '#FAF6E9',      // 纸张色
+                        sunset: '#FFE8CD',     // 日落色
+                        rose: '#FFDCDC',       // 玫瑰色
+                        cream: '#FFF2EB'       // 奶油色
                     }
                 }
             }
@@ -32,12 +53,15 @@
                 content-visibility: auto;
             }
             .glass {
-                background: rgba(255, 255, 255, 0.9);
+                background: linear-gradient(135deg, #DDF6D2 0%, #ECFAE5 100%);
                 backdrop-filter: blur(10px);
                 -webkit-backdrop-filter: blur(10px);
             }
             .card-shadow {
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+                box-shadow: 0 4px 20px rgba(176, 219, 156, 0.2);
+            }
+            .text-textcolor {
+                color: #0f0f0f;
             }
             .timer-hidden {
                 transform: translateX(calc(100% - 40px));
@@ -190,31 +214,31 @@
 <body class="bg-gray-50 text-gray-800">
 
     <div class="container mx-auto px-4 py-8">
-        <nav class="mb-8 bg-white rounded-xl p-4 card-shadow">
+        <nav class="mb-8 bg-container rounded-xl p-4 card-shadow">
             <div class="flex flex-wrap justify-center gap-2 md:gap-4">
-                <button class="nav-btn active px-4 py-2 rounded-lg transition flex items-center" data-page="dashboard">
+                <button class="nav-btn active px-4 py-2 rounded-lg transition flex items-center hover:bg-containerbutton" data-page="dashboard">
                     <i class="fa fa-home mr-2"></i> 仪表盘
                 </button>
-                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center" data-page="timer">
+                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center hover:bg-containerbutton " data-page="timer">
                     <i class="fa fa-clock-o mr-2"></i> 计时器
                 </button>
-                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center" data-page="books">
+                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center hover:bg-containerbutton " data-page="books">
                     <i class="fa fa-book mr-2"></i> 书架
                 </button>
-                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center" data-page="music">
+                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center hover:bg-containerbutton " data-page="music">
                     <i class="fa fa-music mr-2"></i> 音乐
                 </button>
-                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center" data-page="games">
+                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center hover:bg-containerbutton " data-page="games">
                     <i class="fa fa-gamepad mr-2"></i> 游戏
                 </button>
-                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center" data-page="notes">
+                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center hover:bg-containerbutton " data-page="notes">
                     <i class="fa fa-sticky-note mr-2"></i> 备忘录
                 </button>
-                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center" data-page="chat">
+                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center hover:bg-containerbutton " data-page="chat">
                     <i class="fa fa-comments mr-2"></i> 对话
                 </button>
                 <!-- 书签导航按钮 -->
-                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center" data-page="bookmarks">
+                <button class="nav-btn px-4 py-2 rounded-lg transition flex items-center hover:bg-containerbutton " data-page="bookmarks">
                     <i class="fa fa-bookmark mr-2"></i> 书签
                 </button>
             </div>
@@ -346,7 +370,7 @@
                                            class="w-full border rounded p-2">
                                 </div>
                                 <button id="add-manual-record" 
-                                        class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition flex-shrink-0">
+                                        class="bg-primary hover:bg-buttonhover/90 text-white px-4 py-2 rounded-lg transition flex-shrink-0">
                                     <i class="fa fa-save mr-1"></i> 添加
                                 </button>
                             </div>
@@ -364,7 +388,7 @@
             <div class="bg-white rounded-xl p-6 card-shadow">
                 <div class="flex flex-wrap justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold">我的书架</h2>
-                    <button id="upload-pdf-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition flex items-center">
+                    <button id="upload-pdf-btn" class="bg-button hover:bg-buttonhover/90 text-textcolor px-4 py-2 rounded-lg transition flex items-center">
                         <i class="fa fa-upload mr-2"></i> 上传文档 (.pdf / .txt)
                     </button>
                 </div>
@@ -432,16 +456,17 @@
                     <div class="flex items-center">
                         <span id="pdf-page-info">第 1 页 / 共 ? 页</span>
                         <div class="ml-4 flex items-center" id="pdf-navigation">
-                            <label for="pdf-page-input">跳转到第</label>
+                            <button id="pdf-jump-btn" class="bg-buttonread hover:bg-buttonreadhover text-white px-2 py-1 rounded">跳转</button>
+                            <label for="pdf-page-input">到第</label>
                             <input type="number" id="pdf-page-input" class="w-16 border rounded p-1 mx-1 text-dark" min="1">
-                            <button id="pdf-jump-btn" class="bg-primary text-white px-2 py-1 rounded">页</button>
+                            <label for="pdf-page-input">页</label>
                         </div>
                     </div>
                     <div class="flex gap-2" id="pdf-buttons">
-                        <button id="pdf-prev-page" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button id="pdf-prev-page" class="bg-buttonread hover:bg-buttonreadhover px-3 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed">
                             上一页
                         </button>
-                        <button id="pdf-next-page" class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button id="pdf-next-page" class="bg-buttonread hover:bg-buttonreadhover px-3 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed">
                             下一页
                         </button>
                     </div>
@@ -454,7 +479,7 @@
             <header class="bg-orange text-light p-3 flex justify-between items-center flex-shrink-0">
                 <h3 id="txt-viewer-title" class="text-xl font-bold"></h3>
                 <div class="flex items-center space-x-3">
-                    <label for="bg-mode" class="text-sm">背景:</label>
+                    <label for="bg-mode" class="text">背景:</label>
                     <select id="bg-mode" class="text-dark p-1 rounded">
                         <option value="light-mode">白天</option>
                         <option value="sepia-mode">羊皮纸</option>
@@ -484,15 +509,16 @@
             </div>
             <footer class="bg-orange text-light p-2 flex justify-center items-center flex-shrink-0">
                 <div class="flex items-center">
-                    <label for="txt-page-input">跳转到第</label>
+                    <button id="txt-jump-btn" class="bg-buttonread hover:bg-buttonreadhover px-2 py-1 rounded text-light">跳转</button>
+                    <label for="txt-page-input">到第</label>
                     <input type="number" id="txt-page-input" class="w-16 border rounded p-1 mx-1 text-dark" min="1">
-                    <button id="txt-jump-btn" class="bg-primary px-2 py-1 rounded text-light">页</button>
+                    <label for="txt-page-input">页</label>
                 </div>
                 <span id="txt-page-info" class="mx-4">第 1 页 / 共 1 页</span>
-                <button id="txt-prev-page" class="mx-3 px-3 py-1 bg-primary hover:bg-blue-600 rounded">
+                <button id="txt-prev-page" class="mx-3 px-3 py-1 bg-buttonread hover:bg-buttonreadhover rounded">
                     <i class="fa fa-arrow-up"></i> 上一页
                 </button>
-                <button id="txt-next-page" class="mx-3 px-3 py-1 bg-primary hover:bg-blue-600 rounded">
+                <button id="txt-next-page" class="mx-3 px-3 py-1 bg-buttonread hover:bg-buttonreadhover rounded">
                     <i class="fa fa-arrow-down"></i> 下一页
                 </button>
             </footer>
@@ -508,7 +534,7 @@
                         <input type="text" id="netease-playlist-id" 
                             value="877029680" placeholder="输入网易云歌单ID（从歌单URL中提取）"
                             class="flex-1 border rounded p-2">
-                        <button id="save-music-setting" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition">
+                        <button id="save-music-setting" class="bg-button hover:bg-buttonhover/90 text-white px-4 py-2 rounded-lg transition">
                             保存设置
                         </button>
                     </div>
@@ -528,13 +554,13 @@
                     <div id="music-player" class="aplayer">
                         </div>
                     <div class="flex justify-center mt-4 space-x-4">
-                        <button id="music-prev" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        <button id="music-prev" class="bg-button hover:bg-buttonhover text-white font-bold py-2 px-4 rounded">
                             <i class="fa fa-step-backward"></i> 上一首
                         </button>
-                        <button id="music-play-pause" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        <button id="music-play-pause" class="bg-button hover:bg-buttonhover text-white font-bold py-2 px-4 rounded">
                             <i id="play-pause-icon" class="fa fa-play"></i> 播放/暂停
                         </button>
-                        <button id="music-next" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        <button id="music-next" class="bg-button hover:bg-buttonhover text-white font-bold py-2 px-4 rounded">
                             下一首 <i class="fa fa-step-forward"></i>
                         </button>
                     </div>
@@ -548,76 +574,32 @@
                 <h2 class="text-2xl font-bold mb-6">休闲游戏</h2>
                 
                 <div class="mb-6">
-                    <h3 class="font-bold text-lg mb-3">选择游戏</h3>
                     <div class="flex flex-wrap gap-3">
-                        <button class="game-selector active bg-primary text-white px-4 py-2 rounded-lg transition" data-game="1024">
+                        <!-- 默认激活的按钮 -->
+                        <button class="game-selector active bg-button hover:bg-buttonhover text-white px-4 py-2 rounded-lg transition" data-game="game-1024">
                             1024游戏
                         </button>
-                        <button class="game-selector bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg transition" data-game="minesweeper">
+                        <button class="game-selector bg-button hover:bg-buttonhover text-white px-4 py-2 rounded-lg transition" data-game="minesweeper">
                             扫雷
                         </button>
-                        <button id="upload-game-btn" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg transition flex items-center">
-                            <i class="fa fa-upload mr-2"></i> 上传游戏
-                        </button>
+
                     </div>
                 </div>
                 
                 <div class="max-w-2xl mx-auto">
                     <!-- 1024游戏 -->
                     <div id="game-1024" class="game-content">
-                        <div>
-                            <div class="flex justify-between items-center mb-4">
-                                <div>
-                                    <p class="text-gray-600">分数</p>
-                                    <p id="score-1024" class="text-2xl font-bold">0</p>
-                                </div>
-                                <button id="restart-1024" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg transition">
-                                    重新开始
-                                </button>
-                            </div>
-                            <div class="bg-gray-200 p-3 rounded-lg">
-                                <div class="grid" id="grid-1024">
-                                    </div>
-                            </div>
-                            <p class="text-sm text-gray-500 mt-4 text-center">
-                                使用方向键移动方块，相同数字碰撞将合并
-                            </p>
-                        </div>
+                        <iframe id="1024-frame" src="/static/games/1024.html" 
+                                class="w-full h-[900px] border-none" title="1024游戏"></iframe>
                     </div>
                     
                     <!-- 扫雷游戏 -->
                     <div id="minesweeper" class="game-content hidden">
                         <iframe id="minesweeper-frame" src="/static/games/minesweeper.html" 
-                                class="w-full h-[600px] border-none" title="扫雷游戏"></iframe>
+                                class="w-full h-[900px] border-none" title="扫雷游戏"></iframe>
                     </div>
                     
-                    <!-- 上传游戏内容 -->
-                    <div id="game-upload" class="game-content hidden">
-                        <div class="p-4 border rounded-lg bg-gray-50">
-                            <h4 class="font-semibold mb-2 flex items-center">
-                                <i class="fa fa-plus-circle mr-2 text-primary"></i> 上传自定义游戏
-                            </h4>
-                            <div class="flex flex-wrap items-end gap-3">
-                                <div class="flex-1 min-w-[150px]">
-                                    <label class="text-sm text-gray-600 block mb-1">游戏名称</label>
-                                    <input type="text" id="game-name" class="w-full border rounded p-2" placeholder="输入游戏名称">
-                                </div>
-                                <div class="flex-1 min-w-[200px]">
-                                    <label class="text-sm text-gray-600 block mb-1">选择游戏文件</label>
-                                    <input type="file" id="game-file" accept=".html,.htm,.js,.zip" class="w-full border rounded p-2">
-                                </div>
-                                <button id="upload-game-submit" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition flex-shrink-0">
-                                    <i class="fa fa-upload mr-1"></i> 上传
-                                </button>
-                            </div>
-                        </div>
-                        <div id="custom-games-list" class="mt-6">
-                            <h4 class="font-semibold mb-2">我的上传游戏</h4>
-                            <div id="custom-games-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                <!-- 自定义游戏将通过JS动态加载 -->
-                            </div>
-                        </div>
-                    </div>
+
                 </div>
             </div>
         </div>
@@ -626,7 +608,7 @@
             <div class="bg-white rounded-xl p-6 card-shadow">
                 <div class="flex flex-wrap justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold">备忘录</h2>
-                    <button id="create-note-btn" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition flex items-center">
+                    <button id="create-note-btn" class="bg-button hover:bg-buttonhover text-white px-4 py-2 rounded-lg transition flex items-center">
                         <i class="fa fa-plus mr-2"></i> 新建备忘录
                     </button>
                 </div>
@@ -635,7 +617,7 @@
                     <!-- 备忘录列表将通过JavaScript动态加载 -->
                 </div>
                 
-                <div id="note-editor" class="border border-gray-200 rounded-lg overflow-hidden hidden flex flex-col h-[70vh]">
+                <div id="note-editor" class="border border-gray-200 rounded-lg overflow-hidden hidden flex flex-col min-h-[70vh]">
                     <div class="border-b p-4 flex justify-between items-center">
                         <input type="text" id="note-title" placeholder="请输入标题..." class="text-xl font-bold border-none outline-none w-full">
                         <div class="flex gap-2">
@@ -682,11 +664,11 @@
                         </button>
                     </div>
                     
-                    <div class="flex flex-1 overflow-hidden">
+                    <div class="flex">
                         <div class="w-1/2 border-r">
-                            <textarea id="note-content-md" class="w-full h-full p-4 border-none outline-none resize-none font-mono text-sm" placeholder="在此输入 Markdown 内容..."></textarea>
+                            <textarea id="note-content-md" class="w-full p-4 border-none outline-none resize-none font-mono text-sm" placeholder="在此输入 Markdown 内容..."></textarea>
                         </div>
-                        <div id="note-preview" class="w-1/2 p-4 overflow-y-auto bg-white">
+                        <div id="note-preview" class="w-1/2 p-4 bg-white">
                             <!-- Markdown 预览内容将在这里渲染 -->
                             <div class="prose max-w-none">在此输入 Markdown 内容以预览...</div>
                         </div>
@@ -702,7 +684,7 @@
                     <div class="md:w-1/4 border rounded-lg overflow-hidden">
                         <div class="p-4 border-b flex justify-between items-center">
                             <h3 class="font-bold">对话列表</h3>
-                            <button id="new-conversation" class="bg-primary hover:bg-primary/90 text-white p-2 rounded">
+                            <button id="new-conversation" class="bg-button hover:bg-buttonhover text-white p-2 rounded">
                                 <i class="fa fa-plus"></i>
                             </button>
                         </div>
@@ -724,7 +706,6 @@
                                 </div>
                                 <!-- 中间模型类型选择区域 -->
                                 <div class="w-full sm:w-auto">
-                                    <label for="model-type" class="block text-sm font-medium text-gray-700 mb-1 sm:mb-0">模型类型</label>
                                     <select id="model-type" class="w-full sm:w-auto border rounded p-2">
                                         <option value="qwen-turbo">Qwen-Turbo</option>
                                         <option value="qwen-max">Qwen-Max</option>
@@ -732,13 +713,13 @@
                                     </select>
                                 </div>
                                 <!-- 右侧保存按钮 -->
-                                <button id="save-api-key" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition">
-                                    保存密钥
+                                <button id="save-api-key" class="bg-button hover:bg-buttonhover text-white px-4 py-2 rounded-lg transition">
+                                    保存设置
                                 </button>
                             </div>
                         </div>
                         
-                        <div class="border rounded-lg overflow-hidden flex flex-col h-[600px]">
+                        <div class="border rounded-lg overflow-hidden flex flex-col h-[500px]">
                             <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
                                 <!-- 消息内容将动态生成 -->
                             </div>
@@ -747,7 +728,7 @@
                                 <form id="chat-form" class="flex gap-3">
                                     <textarea id="chat-input" placeholder="请输入您的问题..." 
                                             class="flex-1 border rounded p-2 resize-none" rows="3"></textarea>
-                                    <button type="submit" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition flex-shrink-0">
+                                    <button type="submit" class="bg-button hover:bg-buttonhover text-white px-4 py-2 rounded-lg transition flex-shrink-0">
                                         <i class="fa fa-paper-plane"></i>
                                     </button>
                                 </form>
@@ -774,7 +755,7 @@
                         <label class="text-sm text-gray-600 block mb-1" for="bookmark-url">网址 (URL)</label>
                         <input type="url" id="bookmark-url" placeholder="如：https://flask.palletsprojects.com" class="w-full border rounded p-2">
                     </div>
-                    <button id="add-bookmark" class="bg-primary hover:bg-teal-600 text-white px-4 py-2 rounded-lg transition flex-shrink-0">
+                    <button id="add-bookmark" class="bg-button hover:bg-buttonhover text-white px-4 py-2 rounded-lg transition flex-shrink-0">
                         <i class="fa fa-plus mr-1"></i> 添加书签
                     </button>
                 </div>
@@ -787,7 +768,7 @@
         </div>
     </div>
 
-    <footer class="bg-orange text-white py-6 mt-12">
+    <footer class="bg-orange text-white py-3 mt-12">
         <div class="container mx-auto px-4 text-center">
             <p> DREAMER &copy; 2025</p>
         </div>
@@ -859,20 +840,27 @@
             const navButtons = document.querySelectorAll('.nav-btn');
             
             navButtons.forEach(button => {
+                // 为每个按钮绑定点击事件，当按钮被点击时执行以下逻辑
                 button.addEventListener('click', function() {
-                    navButtons.forEach(btn => btn.classList.remove('active', 'bg-primary', 'text-white'));
-                    navButtons.forEach(btn => btn.classList.add('hover:bg-gray-100'));
-                    
-                    this.classList.add('active', 'bg-primary', 'text-white');
-                    this.classList.remove('hover:bg-gray-100');
-                    
+                    // 移除所有按钮的激活样式
+                    navButtons.forEach(btn => btn.classList.remove('active', 'bg-containerbutton'));
+                    // 恢复其他按钮的悬停效果
+                    navButtons.forEach(btn => btn.classList.add('hover:bg-container'));
+
+                    // 为当前点击的按钮添加激活样式
+                    this.classList.add('active', 'bg-containerbutton');
+                    // 移除当前按钮的悬停效果
+                    this.classList.remove('hover:bg-container');
+
+                    // 获取按钮对应的页面ID并显示该页面
                     const pageId = this.getAttribute('data-page');
                     showPage(pageId);
                 });
             });
-            
-            document.querySelector('.nav-btn.active').classList.add('bg-primary', 'text-white');
-            document.querySelector('.nav-btn.active').classList.remove('hover:bg-gray-100');
+            // 默认激活第一个按钮
+            document.querySelector('.nav-btn.active').classList.add('bg-containerbutton');
+            // 移除悬停效果
+            document.querySelector('.nav-btn.active').classList.remove('hover:bg-container');
         }
         
         // ----------------------------------------------------
@@ -1610,7 +1598,7 @@
                 } else {
                     // 使用文档标题作为文字封面
                     coverContent = `
-                        <div class="h-48 bg-primary text-white p-4 flex items-center justify-center text-center font-bold text-lg leading-snug break-words" style="word-break: break-all;">
+                        <div class="h-48 bg-book text-textcolor p-4 flex items-center justify-center text-center font-bold text-lg leading-snug break-words" style="word-break: break-all;">
                             ${book.title}
                         </div>
                     `;
@@ -1618,7 +1606,7 @@
                 
                 bookElement.innerHTML = `
                     <div class="absolute top-2 right-2 z-10">
-                        <button class="delete-book bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition" 
+                        <button class="delete-book bg-dark text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition" 
                                 data-id="${book.id}">
                             <i class="fa fa-times text-xs"></i>
                         </button>
@@ -1693,7 +1681,7 @@
             const book = pdfBooks.find(b => b.id === bookId);
             if (book) pdfTitle.textContent = book.title;
             
-            pdfContainer.innerHTML = '<div class="text-center py-10"><i class="fa fa-spinner fa-spin text-4xl text-primary"></i><p class="mt-2">加载PDF中...</p></div>';
+            pdfContainer.innerHTML = '<div class="text-center py-10"><i class="fa fa-spinner fa-spin text-4xl text-textcolor"></i><p class="mt-2">加载PDF中...</p></div>';
             
             // ✅ 关键修正：使用 book.file_path，并确保 URL 编码
             const pdfFileName = book ? book.file_path : 'error.pdf';
@@ -2111,7 +2099,7 @@
                 item.className = 'bg-white border rounded-lg p-4 shadow flex justify-between items-center';
                 item.innerHTML = `
                     <div>
-                        <a href="${b.url}" target="_blank" class="font-bold text-primary hover:underline">${b.title}</a>
+                        <a href="${b.url}" target="_blank" class="font-bold text-textcolor hover:underline">${b.title}</a>
                     </div>
                     <button class="text-red-500 hover:text-red-700 ml-3" onclick="deleteBookmark(${b.id})">
                         <i class="fa fa-trash"></i>
@@ -2284,156 +2272,62 @@
         // ----------------------------------------------------
         function initGames() {
             const gameSelectors = document.querySelectorAll('.game-selector');
+            
+            if (!gameSelectors || gameSelectors.length === 0) {
+                console.error('游戏选择器元素未找到');
+                return;
+            }
+            
+            // 为所有游戏选择器添加点击事件
             gameSelectors.forEach(selector => {
                 selector.addEventListener('click', function() {
+                    // 移除所有选择器的active状态
                     gameSelectors.forEach(s => {
-                        s.classList.remove('active', 'bg-primary', 'text-white');
-                        s.classList.add('bg-gray-200', 'hover:bg-gray-300');
+                        if (s && s.classList) {
+                            s.classList.remove('active', 'bg-primary', 'text-white');
+                            s.classList.add('bg-gray-200', 'hover:bg-gray-300');
+                        }
                     });
-                    this.classList.add('active', 'bg-primary', 'text-white');
-                    this.classList.remove('bg-gray-200', 'hover:bg-gray-300');
                     
-                    const gameId = this.getAttribute('data-game');
-                    document.querySelectorAll('.game-content').forEach(content => {
-                        content.classList.add('hidden');
-                    });
-                    document.getElementById(gameId).classList.remove('hidden');
-                });
-            });
-            
-            document.getElementById('upload-game-btn').addEventListener('click', function() {
-                gameSelectors.forEach(s => {
-                    s.classList.remove('active', 'bg-primary', 'text-white');
-                    s.classList.add('bg-gray-200', 'hover:bg-gray-300');
-                });
-                this.classList.add('active', 'bg-primary', 'text-white');
-                this.classList.remove('bg-gray-200', 'hover:bg-gray-300');
-                
-                document.querySelectorAll('.game-content').forEach(content => {
-                    content.classList.add('hidden');
-                });
-                document.getElementById('game-upload').classList.remove('hidden');
-                
-                // 加载自定义游戏列表
-                loadCustomGames();
-            });
-            
-            initGame1024();
-            // initMinesweeper(); // 移除，因为我们现在用iframe加载扫雷游戏
-            
-            // 上传自定义游戏
-            document.getElementById('upload-game-submit').addEventListener('click', uploadCustomGame);
-        }
-        
-        function uploadCustomGame() {
-            const nameInput = document.getElementById('game-name');
-            const fileInput = document.getElementById('game-file');
-            
-            const name = nameInput.value.trim();
-            if (!name) {
-                alert('请输入游戏名称');
-                return;
-            }
-            
-            if (!fileInput.files[0]) {
-                alert('请选择游戏文件');
-                return;
-            }
-            
-            const file = fileInput.files[0];
-            const allowedExtensions = ['.html', '.htm', '.js', '.zip'];
-            const fileExt = file.name.toLowerCase().split('.').pop();
-            if (!allowedExtensions.some(ext => `.${fileExt}` === ext)) {
-                alert('只支持上传HTML、HTM、JS或ZIP格式的游戏文件');
-                return;
-            }
-            
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('name', name);
-            
-            fetch('/api/upload-game', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('游戏上传成功！');
-                    nameInput.value = '';
-                    fileInput.value = '';
-                    loadCustomGames();
-                } else {
-                    alert('上传失败: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('上传错误:', error);
-                alert('上传失败，请稍后重试');
-            });
-        }
-        
-        function loadCustomGames() {
-            fetch('/api/get-games')
-            .then(response => response.json())
-            .then(data => {
-                const container = document.getElementById('custom-games-container');
-                container.innerHTML = '';
-                
-                if (data.games.length === 0) {
-                    container.innerHTML = '<div class="text-gray-500 text-center py-4 col-span-full">暂无自定义游戏</div>';
-                    return;
-                }
-                
-                data.games.forEach(game => {
-                    const gameItem = document.createElement('div');
-                    gameItem.className = 'bg-white border rounded-lg p-4 shadow flex justify-between items-center';
-                    gameItem.innerHTML = `
-                        <div class="flex-1">
-                            <div class="font-bold">${game.name}</div>
-                            <div class="text-xs text-gray-500">${game.upload_date}</div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button class="text-primary hover:text-blue-700" onclick="playCustomGame(${game.id})">
-                                <i class="fa fa-play"></i>
-                            </button>
-                            <button class="text-red-500 hover:text-red-700" onclick="deleteCustomGame(${game.id})">
-                                <i class="fa fa-trash"></i>
-                            </button>
-                        </div>
-                    `;
-                    container.appendChild(gameItem);
-                });
-            })
-            .catch(error => {
-                console.error('加载自定义游戏失败:', error);
-            });
-        }
-        
-        function playCustomGame(gameId) {
-            // 可以在新窗口打开游戏文件
-            window.open(`/uploads/games/${gameId}`, '_blank');
-        }
-        
-        function deleteCustomGame(gameId) {
-            if (confirm('确定要删除这个自定义游戏吗？')) {
-                fetch(`/api/delete-game/${gameId}`, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('游戏删除成功！');
-                        loadCustomGames();
-                    } else {
-                        alert('删除失败: ' + data.error);
+                    // 为当前选择器添加active状态
+                    if (this && this.classList) {
+                        this.classList.add('active', 'bg-primary', 'text-white');
+                        this.classList.remove('bg-gray-200', 'hover:bg-gray-300');
                     }
-                })
-                .catch(error => {
-                    console.error('删除游戏失败:', error);
-                    alert('删除失败，请稍后重试');
+                    
+                    // 隐藏上传游戏区域
+                    const gameUploadElement = document.getElementById('game-upload');
+                    if (gameUploadElement) {
+                        gameUploadElement.classList.add('hidden');
+                    }
+                    
+                    // 显示对应的游戏内容
+                    const gameId = this.getAttribute && this.getAttribute('data-game');
+                    if (gameId) {
+                        document.querySelectorAll('.game-content').forEach(content => {
+                            content.classList.add('hidden');
+                        });
+                        const targetGameElement = document.getElementById(gameId);
+                        if (targetGameElement) {
+                            targetGameElement.classList.remove('hidden');
+                            
+                            // 如果是1024游戏，确保正确显示
+                            if (gameId === 'game-1024') {
+                                setTimeout(() => {
+                                    // 重新加载iframe以确保显示
+                                    const frame = document.getElementById('1024-frame');
+                                    if (frame) {
+                                        frame.src = frame.src;
+                                    }
+                                }, 50);
+                            }
+                        }
+                    }
                 });
-            }
+            });
+            
+            // 1024游戏现在使用iframe，不需要初始化函数
+            
         }
         
         function initGame1024() {
@@ -2667,9 +2561,6 @@
                 }
             });
             
-            window.addEventListener('resize', setGridSize);
-            document.getElementById('restart-1024').addEventListener('click', initializeGrid);
-            initializeGrid();
         }
         
 
@@ -2677,6 +2568,32 @@
         // ----------------------------------------------------
         // 备忘录逻辑
         // ----------------------------------------------------
+        /**
+         * 自动调整备忘录编辑器的高度以适应内容
+         */
+        function autoGrowEditor() {
+            const textarea = document.getElementById('note-content-md');
+            const preview = document.getElementById('note-preview');
+            // 设置一个合理的最小高度，例如 400px
+            const minHeight = 400; 
+
+            if (textarea) {
+                // 1. 重置高度为 'auto'，以便获取正确的 scrollHeight
+                textarea.style.height = 'auto'; 
+                
+                // 2. 计算新高度，确保不低于最小值
+                const newHeight = Math.max(minHeight, textarea.scrollHeight);
+                
+                // 3. 设置 textarea 的新高度
+                textarea.style.height = newHeight + 'px';
+
+                // 4. (重要) 让预览区域的最小高度与 textarea 匹配
+                if (preview) {
+                    preview.style.minHeight = newHeight + 'px';
+                }
+            }
+        }
+
         function initNotes() {
             // 从后端加载备忘录
             fetch('/api/notes')
@@ -2709,6 +2626,7 @@
                 
                 // 清空预览区域
                 document.getElementById('note-preview').innerHTML = '<div class="prose max-w-none">在此输入 Markdown 内容以预览...</div>';
+                autoGrowEditor();    
             });
             
             document.getElementById('close-note-btn').addEventListener('click', function() {
@@ -2747,6 +2665,7 @@
             
             // 备忘录内容变化时自动保存
             document.getElementById('note-content-md').addEventListener('input', function() {
+                autoGrowEditor(); 
                 if (currentNoteId) {
                     // 自动保存，每1秒最多保存一次
                     clearTimeout(window.noteAutoSaveTimer);
@@ -3001,6 +2920,7 @@
                             notesList.classList.add('hidden');
                             noteEditor.classList.remove('hidden');
                             deleteBtn.classList.remove('hidden');
+                            autoGrowEditor();
                         } else {
                             console.error('备忘录编辑所需的DOM元素不存在');
                         }

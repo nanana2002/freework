@@ -4,442 +4,343 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>1024游戏</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
     <style>
         body {
-            background-color: #faf8ef;
+            font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 400px;
-            width: 100%;
-        }
-        
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .title {
-            font-size: 40px;
-            font-weight: bold;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #faf8ef;
             color: #776e65;
         }
         
-        .score-container {
-            background-color: #bbada0;
-            color: #eee4da;
-            padding: 10px 20px;
-            border-radius: 5px;
+        .game-container {
             text-align: center;
         }
         
-        .score-label {
-            font-size: 12px;
-            text-transform: uppercase;
+        .header {
+            margin-bottom: 20px;
+        }
+        
+        .scores {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .score-box {
+            background-color: #bbada0;
+            padding: 10px 20px;
+            border-radius: 6px;
+            min-width: 100px;
         }
         
         .score-value {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: bold;
-            color: white;
+            color: #eee4da;
+            margin-top: 5px;
         }
         
         .grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
+            gap: 10px;
+            width: 400px;
+            height: 400px;
             background-color: #bbada0;
-            padding: 15px;
-            border-radius: 10px;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 20px auto;
+            box-sizing: border-box;
         }
         
         .cell {
-            width: 100%;
-            aspect-ratio: 1/1;
-            background-color: #cdc1b4;
-            border-radius: 5px;
+            width: 85px;
+            height: 85px;
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
             font-weight: bold;
-            transition: all 0.2s ease;
+            font-size: 32px;
         }
         
-        .cell-2 {
-            background-color: #eee4da;
-            color: #776e65;
-        }
+        .tile-2 { background-color: #eee4da; color: #776e65; }
+        .tile-4 { background-color: #ede0c8; color: #776e65; }
+        .tile-8 { background-color: #f2b179; color: #f9f6f2; font-size: 28px; }
+        .tile-16 { background-color: #f59563; color: #f9f6f2; font-size: 24px; }
+        .tile-32 { background-color: #f67c5f; color: #f9f6f2; font-size: 24px; }
+        .tile-64 { background-color: #f65e3b; color: #f9f6f2; font-size: 20px; }
+        .tile-128 { background-color: #edcf72; color: #f9f6f2; font-size: 20px; }
+        .tile-256 { background-color: #edcc61; color: #f9f6f2; font-size: 18px; }
+        .tile-512 { background-color: #edc850; color: #f9f6f2; font-size: 18px; }
+        .tile-1024 { background-color: #edc53f; color: #f9f6f2; font-size: 16px; }
+        .tile-2048 { background-color: #edc22e; color: #f9f6f2; font-size: 16px; }
         
-        .cell-4 {
-            background-color: #ede0c8;
-            color: #776e65;
-        }
-        
-        .cell-8 {
-            background-color: #f2b179;
-            color: #f9f6f2;
-        }
-        
-        .cell-16 {
-            background-color: #f59563;
-            color: #f9f6f2;
-        }
-        
-        .cell-32 {
-            background-color: #f67c5f;
-            color: #f9f6f2;
-        }
-        
-        .cell-64 {
-            background-color: #f65e3b;
-            color: #f9f6f2;
-        }
-        
-        .cell-128 {
-            background-color: #edcf72;
-            color: #f9f6f2;
-            font-size: 20px;
-        }
-        
-        .cell-256 {
-            background-color: #edcc61;
-            color: #f9f6f2;
-            font-size: 20px;
-        }
-        
-        .cell-512 {
-            background-color: #edc850;
-            color: #f9f6f2;
-            font-size: 20px;
-        }
-        
-        .cell-1024 {
-            background-color: #edc53f;
-            color: #f9f6f2;
-            font-size: 16px;
-        }
-        
-        .cell-2048 {
-            background-color: #edc22e;
-            color: #f9f6f2;
-            font-size: 16px;
-        }
-        
-        .cell-super {
-            background-color: #3c3a32;
-            color: #f9f6f2;
-            font-size: 16px;
-        }
-        
-        .game-info {
+        .controls {
             margin-top: 20px;
-            text-align: center;
-            color: #776e65;
         }
         
-        .btn {
+        button {
+            padding: 10px 20px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 4px;
             background-color: #8f7a66;
             color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
             font-size: 16px;
             cursor: pointer;
-            transition: background-color 0.2s;
         }
         
-        .btn:hover {
-            background-color: #705d4c;
+        button:hover {
+            background-color: #776e65;
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            max-width: 400px;
+            text-align: center;
+            color: #776e65;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="game-container">
         <div class="header">
-            <div class="title">1024</div>
-            <div class="score-container">
-                <div class="score-label">分数</div>
-                <div class="score-value" id="score">0</div>
+            <h1>1024游戏</h1>
+            <div class="scores">
+                <div class="score-box">
+                    <div>分数</div>
+                    <div id="score-1024" class="score-value">0</div>
+                </div>
             </div>
         </div>
         
-        <div class="grid" id="grid">
-            <!-- 游戏格子将通过JS生成 -->
+        <div class="grid" id="grid-1024">
+            <!-- 格子将通过JavaScript动态生成 -->
         </div>
         
-        <div class="game-info">
+        <div class="controls">
+            <button id="restart-1024">重新开始</button>
+        </div>
+        
+        <div class="instructions">
             <p>使用方向键移动方块，相同数字碰撞将合并</p>
-            <button class="btn" id="restart-btn">重新开始</button>
+            <p>目标：合成1024方块！</p>
         </div>
     </div>
 
     <script>
-        const gridSize = 4;
-        let grid = [];
-        let score = 0;
-        let gameOver = false;
-        
-        // 初始化游戏
-        function initGame() {
-            // 重置游戏状态
-            grid = Array(gridSize).fill().map(() => Array(gridSize).fill(0));
-            score = 0;
-            gameOver = false;
+        // 1024 游戏逻辑
+        document.addEventListener('DOMContentLoaded', () => {
+            const gridSize = 4;
+            let grid = [];
+            let score = 0;
+            const gridElement = document.getElementById('grid-1024');
             
-            // 更新分数显示
-            document.getElementById('score').textContent = score;
+            // 设置网格样式
+            gridElement.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
             
-            // 添加两个初始方块
-            addNewTile();
-            addNewTile();
-            
-            // 渲染网格
-            renderGrid();
-        }
-        
-        // 添加新方块
-        function addNewTile() {
-            // 找出所有空位置
-            const emptyTiles = [];
-            for (let i = 0; i < gridSize; i++) {
-                for (let j = 0; j < gridSize; j++) {
-                    if (grid[i][j] === 0) {
-                        emptyTiles.push({ row: i, col: j });
-                    }
-                }
-            }
-            
-            // 如果没有空位置，游戏结束
-            if (emptyTiles.length === 0) {
-                gameOver = true;
-                setTimeout(() => alert(`游戏结束！您的得分是: ${score}`), 500);
-                return false;
-            }
-            
-            // 在随机空位置添加新方块（90%概率为2，10%概率为4）
-            const randomIndex = Math.floor(Math.random() * emptyTiles.length);
-            const { row, col } = emptyTiles[randomIndex];
-            grid[row][col] = Math.random() < 0.9 ? 2 : 4;
-            
-            return true;
-        }
-        
-        // 渲染网格
-        function renderGrid() {
-            const gridElement = document.getElementById('grid');
-            gridElement.innerHTML = '';
-            
-            for (let i = 0; i < gridSize; i++) {
-                for (let j = 0; j < gridSize; j++) {
-                    const value = grid[i][j];
-                    const cell = document.createElement('div');
-                    cell.className = `cell ${value !== 0 ? `cell-${value}` : ''}`;
-                    cell.textContent = value !== 0 ? value : '';
-                    gridElement.appendChild(cell);
-                }
-            }
-        }
-        
-        // 移动方块
-        function move(direction) {
-            if (gameOver) return false;
-            
-            let moved = false;
-            let merged = Array(gridSize).fill().map(() => Array(gridSize).fill(false));
-            
-            switch (direction) {
-                case 'up':
-                    for (let j = 0; j < gridSize; j++) {
-                        for (let i = 1; i < gridSize; i++) {
-                            if (grid[i][j] !== 0) {
-                                let row = i;
-                                // 移动到最上方
-                                while (row > 0 && grid[row - 1][j] === 0) {
-                                    grid[row - 1][j] = grid[row][j];
-                                    grid[row][j] = 0;
-                                    row--;
-                                    moved = true;
-                                }
-                                
-                                // 合并相同数字
-                                if (row > 0 && grid[row - 1][j] === grid[row][j] && !merged[row - 1][j]) {
-                                    grid[row - 1][j] *= 2;
-                                    score += grid[row - 1][j];
-                                    grid[row][j] = 0;
-                                    merged[row - 1][j] = true;
-                                    moved = true;
-                                }
-                            }
-                        }
-                    }
-                    break;
-                    
-                case 'down':
-                    for (let j = 0; j < gridSize; j++) {
-                        for (let i = gridSize - 2; i >= 0; i--) {
-                            if (grid[i][j] !== 0) {
-                                let row = i;
-                                // 移动到最下方
-                                while (row < gridSize - 1 && grid[row + 1][j] === 0) {
-                                    grid[row + 1][j] = grid[row][j];
-                                    grid[row][j] = 0;
-                                    row++;
-                                    moved = true;
-                                }
-                                
-                                // 合并相同数字
-                                if (row < gridSize - 1 && grid[row + 1][j] === grid[row][j] && !merged[row + 1][j]) {
-                                    grid[row + 1][j] *= 2;
-                                    score += grid[row + 1][j];
-                                    grid[row][j] = 0;
-                                    merged[row + 1][j] = true;
-                                    moved = true;
-                                }
-                            }
-                        }
-                    }
-                    break;
-                    
-                case 'left':
-                    for (let i = 0; i < gridSize; i++) {
-                        for (let j = 1; j < gridSize; j++) {
-                            if (grid[i][j] !== 0) {
-                                let col = j;
-                                // 移动到最左方
-                                while (col > 0 && grid[i][col - 1] === 0) {
-                                    grid[i][col - 1] = grid[i][col];
-                                    grid[i][col] = 0;
-                                    col--;
-                                    moved = true;
-                                }
-                                
-                                // 合并相同数字
-                                if (col > 0 && grid[i][col - 1] === grid[i][col] && !merged[i][col - 1]) {
-                                    grid[i][col - 1] *= 2;
-                                    score += grid[i][col - 1];
-                                    grid[i][col] = 0;
-                                    merged[i][col - 1] = true;
-                                    moved = true;
-                                }
-                            }
-                        }
-                    }
-                    break;
-                    
-                case 'right':
-                    for (let i = 0; i < gridSize; i++) {
-                        for (let j = gridSize - 2; j >= 0; j--) {
-                            if (grid[i][j] !== 0) {
-                                let col = j;
-                                // 移动到最右方
-                                while (col < gridSize - 1 && grid[i][col + 1] === 0) {
-                                    grid[i][col + 1] = grid[i][col];
-                                    grid[i][col] = 0;
-                                    col++;
-                                    moved = true;
-                                }
-                                
-                                // 合并相同数字
-                                if (col < gridSize - 1 && grid[i][col + 1] === grid[i][col] && !merged[i][col + 1]) {
-                                    grid[i][col + 1] *= 2;
-                                    score += grid[i][col + 1];
-                                    grid[i][col] = 0;
-                                    merged[i][col + 1] = true;
-                                    moved = true;
-                                }
-                            }
-                        }
-                    }
-                    break;
-            }
-            
-            // 如果有移动，添加新方块并更新界面
-            if (moved) {
-                document.getElementById('score').textContent = score;
+            function initializeGrid() {
+                grid = Array(gridSize).fill().map(() => Array(gridSize).fill(0));
+                score = 0;
+                addNewTile();
                 addNewTile();
                 renderGrid();
+                updateScore();
             }
             
-            return moved;
-        }
-        
-        // 键盘事件监听
-        document.addEventListener('keydown', (e) => {
-            switch (e.key) {
-                case 'ArrowUp':
-                    e.preventDefault();
-                    move('up');
-                    break;
-                case 'ArrowDown':
-                    e.preventDefault();
-                    move('down');
-                    break;
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    move('left');
-                    break;
-                case 'ArrowRight':
-                    e.preventDefault();
-                    move('right');
-                    break;
+            function addNewTile() {
+                const emptyTiles = [];
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
+                        if (grid[i][j] === 0) {
+                            emptyTiles.push({i, j});
+                        }
+                    }
+                }
+                if (emptyTiles.length > 0) {
+                    const {i, j} = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
+                    grid[i][j] = Math.random() < 0.9 ? 2 : 4;
+                }
             }
+            
+            function renderGrid() {
+                gridElement.innerHTML = '';
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
+                        const value = grid[i][j];
+                        const cell = document.createElement('div');
+                        cell.className = 'cell tile-' + (value || 'empty');
+                        cell.textContent = value !== 0 ? value : '';
+                        gridElement.appendChild(cell);
+                    }
+                }
+            }
+            
+            function updateScore() {
+                document.getElementById('score-1024').textContent = score;
+            }
+            
+            function move(direction) {
+                let moved = false;
+                let merged = Array(gridSize).fill().map(() => Array(gridSize).fill(false));
+                
+                switch(direction) {
+                    case 'up':
+                        for (let j = 0; j < gridSize; j++) {
+                            for (let i = 1; i < gridSize; i++) {
+                                if (grid[i][j] !== 0) {
+                                    let row = i;
+                                    while (row > 0 && grid[row - 1][j] === 0) {
+                                        grid[row - 1][j] = grid[row][j];
+                                        grid[row][j] = 0;
+                                        row--;
+                                        moved = true;
+                                    }
+                                    if (row > 0 && grid[row - 1][j] === grid[row][j] && !merged[row - 1][j]) {
+                                        grid[row - 1][j] *= 2;
+                                        score += grid[row - 1][j];
+                                        grid[row][j] = 0;
+                                        merged[row - 1][j] = true;
+                                        moved = true;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case 'down':
+                        for (let j = 0; j < gridSize; j++) {
+                            for (let i = gridSize - 2; i >= 0; i--) {
+                                if (grid[i][j] !== 0) {
+                                    let row = i;
+                                    while (row < gridSize - 1 && grid[row + 1][j] === 0) {
+                                        grid[row + 1][j] = grid[row][j];
+                                        grid[row][j] = 0;
+                                        row++;
+                                        moved = true;
+                                    }
+                                    if (row < gridSize - 1 && grid[row + 1][j] === grid[row][j] && !merged[row + 1][j]) {
+                                        grid[row + 1][j] *= 2;
+                                        score += grid[row + 1][j];
+                                        grid[row][j] = 0;
+                                        merged[row + 1][j] = true;
+                                        moved = true;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case 'left':
+                        for (let i = 0; i < gridSize; i++) {
+                            for (let j = 1; j < gridSize; j++) {
+                                if (grid[i][j] !== 0) {
+                                    let col = j;
+                                    while (col > 0 && grid[i][col - 1] === 0) {
+                                        grid[i][col - 1] = grid[i][col];
+                                        grid[i][col] = 0;
+                                        col--;
+                                        moved = true;
+                                    }
+                                    if (col > 0 && grid[i][col - 1] === grid[i][col] && !merged[i][col - 1]) {
+                                        grid[i][col - 1] *= 2;
+                                        score += grid[i][col - 1];
+                                        grid[i][col] = 0;
+                                        merged[i][col - 1] = true;
+                                        moved = true;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case 'right':
+                        for (let i = 0; i < gridSize; i++) {
+                            for (let j = gridSize - 2; j >= 0; j--) {
+                                if (grid[i][j] !== 0) {
+                                    let col = j;
+                                    while (col < gridSize - 1 && grid[i][col + 1] === 0) {
+                                        grid[i][col + 1] = grid[i][col];
+                                        grid[i][col] = 0;
+                                        col++;
+                                        moved = true;
+                                    }
+                                    if (col < gridSize - 1 && grid[i][col + 1] === grid[i][col] && !merged[i][col + 1]) {
+                                        grid[i][col + 1] *= 2;
+                                        score += grid[i][col + 1];
+                                        grid[i][col] = 0;
+                                        merged[i][col + 1] = true;
+                                        moved = true;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                }
+                if (moved) {
+                    addNewTile();
+                    renderGrid();
+                    updateScore();
+                    if (isGameOver()) {
+                        setTimeout(() => {
+                            alert(`游戏结束！您的得分是: ${score}`);
+                        }, 500);
+                    }
+                }
+            }
+            
+            function isGameOver() {
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
+                        if (grid[i][j] === 0) {
+                            return false;
+                        }
+                    }
+                }
+                for (let i = 0; i < gridSize; i++) {
+                    for (let j = 0; j < gridSize; j++) {
+                        if ((i < gridSize - 1 && grid[i][j] === grid[i + 1][j]) ||
+                            (j < gridSize - 1 && grid[i][j] === grid[i][j + 1])) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+            
+            // 键盘事件处理
+            document.addEventListener('keydown', function(e) {
+                switch(e.key) {
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        move('up');
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        move('down');
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        move('left');
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        move('right');
+                        break;
+                }
+            });
+            
+            // 重新开始按钮
+            document.getElementById('restart-1024').addEventListener('click', initializeGrid);
+            
+            // 初始化游戏
+            initializeGrid();
         });
-        
-        // 重新开始按钮
-        document.getElementById('restart-btn').addEventListener('click', initGame);
-        
-        // 触摸支持（移动设备）
-        let touchStartX = 0;
-        let touchStartY = 0;
-        
-        document.addEventListener('touchstart', (e) => {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        }, false);
-        
-        document.addEventListener('touchend', (e) => {
-            if (!touchStartX || !touchStartY) return;
-            
-            const touchEndX = e.changedTouches[0].clientX;
-            const touchEndY = e.changedTouches[0].clientY;
-            
-            const diffX = touchEndX - touchStartX;
-            const diffY = touchEndY - touchStartY;
-            
-            // 确定滑动方向（优先考虑距离长的方向）
-            if (Math.abs(diffX) > Math.abs(diffY)) {
-                // 水平滑动
-                if (diffX > 50) {
-                    move('right');
-                } else if (diffX < -50) {
-                    move('left');
-                }
-            } else {
-                // 垂直滑动
-                if (diffY > 50) {
-                    move('down');
-                } else if (diffY < -50) {
-                    move('up');
-                }
-            }
-            
-            // 重置起点
-            touchStartX = 0;
-            touchStartY = 0;
-        }, false);
-        
-        // 初始化游戏
-        initGame();
     </script>
 </body>
 </html>
-    
